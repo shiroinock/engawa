@@ -24,6 +24,7 @@ export function FileTree({ onFileClick }: { onFileClick: (path: string, isDir: b
   const [data, setData] = useState<TreeNode[]>([]);
   const [currentDir, setCurrentDir] = useState<string>('');
   const previousDirRef = useRef<string>('');
+  const [permissionError, setPermissionError] = useState<boolean>(false);
 
   // パンくずの深さを計算（インデント量の決定用）
   const breadcrumbDepth = currentDir.split('/').filter(Boolean).length;
@@ -34,8 +35,15 @@ export function FileTree({ onFileClick }: { onFileClick: (path: string, isDir: b
       const nodes = await invoke<FileNode[]>('read_directory', { path });
       const treeNodes = nodes.map((node) => convertToTreeNode(node));
       setData(treeNodes);
+      setPermissionError(false);
     } catch (error) {
       console.error('Failed to load directory:', error);
+      // 権限エラーかどうかをチェック
+      const errorMessage = String(error);
+      if (errorMessage.includes('Permission denied') || errorMessage.includes('permission')) {
+        setPermissionError(true);
+        setData([]);
+      }
     }
   };
 
@@ -115,16 +123,23 @@ export function FileTree({ onFileClick }: { onFileClick: (path: string, isDir: b
       </div>
       <Breadcrumb />
       <div style={{ paddingLeft: `${(breadcrumbDepth + 1) * 12 + 12}px` }}>
-        <Tree
-          data={data}
-          openByDefault={false}
-          width="100%"
-          height={600}
-          indent={12}
-          rowHeight={28}
-        >
-          {Node}
-        </Tree>
+        {permissionError ? (
+          <div className="permission-error">
+            <div className="error-icon">🔒</div>
+            <div className="error-message">このディレクトリにアクセスする権限がありません</div>
+          </div>
+        ) : (
+          <Tree
+            data={data}
+            openByDefault={false}
+            width="100%"
+            height={600}
+            indent={12}
+            rowHeight={28}
+          >
+            {Node}
+          </Tree>
+        )}
       </div>
     </div>
   );
