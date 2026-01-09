@@ -1,0 +1,248 @@
+.natural-language-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.natural-language-modal {
+  background-color: #1e1e1e;
+  border: 1px solid #3e3e42;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.natural-language-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #3e3e42;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.natural-language-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #d4d4d4;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: #858585;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background-color: #3e3e42;
+  color: #d4d4d4;
+}
+
+.natural-language-body {
+  padding: 24px;
+}
+
+.input-section {
+  margin-bottom: 16px;
+}
+
+.input-section label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #d4d4d4;
+  margin-bottom: 8px;
+}
+
+.natural-input-textarea {
+  width: 100%;
+  padding: 12px;
+  background-color: #252526;
+  border: 1px solid #3e3e42;
+  border-radius: 4px;
+  color: #d4d4d4;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 100px;
+  transition: border-color 0.2s ease;
+}
+
+.natural-input-textarea:focus {
+  outline: none;
+  border-color: #569cd6;
+}
+
+.natural-input-textarea::placeholder {
+  color: #6a6a6a;
+}
+
+.button-group {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.btn-translate {
+  flex: 1;
+  padding: 10px 20px;
+  background-color: #0e639c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-translate:hover:not(:disabled) {
+  background-color: #1177bb;
+}
+
+.btn-translate:disabled {
+  background-color: #3e3e42;
+  color: #858585;
+  cursor: not-allowed;
+}
+
+.error-message {
+  padding: 12px;
+  background-color: rgba(244, 67, 54, 0.1);
+  border: 1px solid rgba(244, 67, 54, 0.3);
+  border-radius: 4px;
+  color: #f48771;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.error-icon {
+  font-size: 18px;
+}
+
+.result-section {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #3e3e42;
+}
+
+.result-section label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #d4d4d4;
+  margin-bottom: 8px;
+}
+
+.command-preview {
+  background-color: #252526;
+  border: 1px solid #3e3e42;
+  border-radius: 4px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.command-preview code {
+  color: #4ec9b0;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  word-break: break-all;
+}
+
+.result-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-insert {
+  flex: 1;
+  padding: 10px 20px;
+  background-color: #16825d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-insert:hover {
+  background-color: #1a9b6f;
+}
+
+.btn-copy {
+  padding: 10px 20px;
+  background-color: #3e3e42;
+  color: #d4d4d4;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-copy:hover {
+  background-color: #4e4e52;
+}
+
+.natural-language-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #3e3e42;
+  background-color: #252526;
+}
+
+.hint-text {
+  margin: 0;
+  font-size: 13px;
+  color: #858585;
+  text-align: center;
+}

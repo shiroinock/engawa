@@ -6,6 +6,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { PreviewModal } from './PreviewModal';
 import { LongPressGauge } from './LongPressGauge';
+import { NaturalLanguageInput } from './NaturalLanguageInput';
 import 'xterm/css/xterm.css';
 import './Terminal.css';
 
@@ -22,6 +23,7 @@ export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: 
   const [showPreview, setShowPreview] = useState(false);
   const [previewCommand, setPreviewCommand] = useState<string>('');
   const [gaugeKey, setGaugeKey] = useState(0); // 再レンダリング用
+  const [showNaturalLanguageInput, setShowNaturalLanguageInput] = useState(false);
 
   const LONG_PRESS_DURATION = 1000; // 長押し時間（ミリ秒）
 
@@ -29,6 +31,20 @@ export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: 
   useEffect(() => {
     onCurrentCommandChangeRef.current = onCurrentCommandChange;
   }, [onCurrentCommandChange]);
+
+  // Cmd+K / Ctrl+K で自然言語入力モーダルを開く
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Cmd+K (Mac) または Ctrl+K (Windows/Linux)
+      if (event.key === 'k' && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault();
+        setShowNaturalLanguageInput((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     if (!terminalRef.current) return;
@@ -256,6 +272,17 @@ export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: 
     // カーソルを行末に戻す処理は不要（ユーザーが手動でクリア）
   };
 
+  const handleInsertCommand = (command: string) => {
+    // コマンドをターミナルに挿入（Enterは押さない）
+    if (xtermRef.current) {
+      try {
+        invoke('write_to_pty', { data: command });
+      } catch (error) {
+        console.error('Failed to insert command:', error);
+      }
+    }
+  };
+
   return (
     <>
       <div
@@ -270,6 +297,11 @@ export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: 
           onCancel={handleCancel}
         />
       )}
+      <NaturalLanguageInput
+        isOpen={showNaturalLanguageInput}
+        onClose={() => setShowNaturalLanguageInput(false)}
+        onInsertCommand={handleInsertCommand}
+      />
     </>
   );
 }
