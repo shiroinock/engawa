@@ -17,6 +17,7 @@ interface PreviewModalProps {
 
 export function PreviewModal({ command, onConfirm, onCancel }: PreviewModalProps) {
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
+  const [enterKeyReleased, setEnterKeyReleased] = useState(false);
 
   useEffect(() => {
     const parseCommand = async () => {
@@ -35,17 +36,26 @@ export function PreviewModal({ command, onConfirm, onCancel }: PreviewModalProps
   }, [command]);
 
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
+    const handleKeyUp = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
         onCancel();
       } else if (event.key === 'Enter') {
+        // Enterキーが一度離されるまで無視（長押しから開いた場合の対策）
+        if (!enterKeyReleased) {
+          setEnterKeyReleased(true);
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
         onConfirm();
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onConfirm, onCancel]);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => window.removeEventListener('keyup', handleKeyUp);
+  }, [onConfirm, onCancel, enterKeyReleased]);
 
   if (!parseResult) {
     return null;

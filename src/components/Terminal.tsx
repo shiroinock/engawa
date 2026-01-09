@@ -16,6 +16,8 @@ export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: 
   const currentLineRef = useRef<string>('');
   const enterPressTimerRef = useRef<number | null>(null);
   const isEnterPressedRef = useRef<boolean>(false);
+  const shouldShowPreviewRef = useRef<boolean>(false); // プレビュー表示予定フラグ
+  const showPreviewRef = useRef<boolean>(false); // モーダル表示状態
   const [showPreview, setShowPreview] = useState(false);
   const [previewCommand, setPreviewCommand] = useState<string>('');
   const [gaugeKey, setGaugeKey] = useState(0); // 再レンダリング用
@@ -75,20 +77,26 @@ export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: 
     // Enterキー長押し検知用のカスタムキーハンドラー
     xterm.attachCustomKeyEventHandler((event) => {
       if (event.key === 'Enter') {
+        // モーダルが開いている場合はxtermでの処理をスキップ
+        if (showPreviewRef.current) {
+          return false;
+        }
+
         if (event.type === 'keydown' && !event.repeat) {
           // Enterキーが押された（長押し開始）
           isEnterPressedRef.current = true;
+          shouldShowPreviewRef.current = false; // リセット
           setGaugeKey((prev) => prev + 1); // 再レンダリングをトリガー
           enterPressTimerRef.current = window.setTimeout(() => {
-            // 長押しされたらプレビュー表示（ゲージが100%になるまで少し待つ）
+            // 長押しされたらプレビュー表示
+            enterPressTimerRef.current = null; // タイマーをクリア
             if (currentLineRef.current.trim()) {
-              // ゲージアニメーションが完了してからモーダルを表示
-              setTimeout(() => {
-                setPreviewCommand(currentLineRef.current);
-                setShowPreview(true);
-                isEnterPressedRef.current = false;
-                setGaugeKey((prev) => prev + 1);
-              }, 50);
+              shouldShowPreviewRef.current = true; // プレビュー表示予定をマーク
+              setPreviewCommand(currentLineRef.current);
+              showPreviewRef.current = true;
+              setShowPreview(true);
+              isEnterPressedRef.current = false;
+              setGaugeKey((prev) => prev + 1);
             }
           }, LONG_PRESS_DURATION);
           return false; // デフォルト動作を阻止
@@ -100,7 +108,8 @@ export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: 
             clearTimeout(enterPressTimerRef.current);
             enterPressTimerRef.current = null;
 
-            if (!showPreview) {
+            // プレビュー表示予定がなく、かつモーダルが開いていない場合のみ実行
+            if (!shouldShowPreviewRef.current && !showPreviewRef.current) {
               // プレビュー表示前に離された = 通常の実行
               invoke('write_to_pty', { data: '\r' }).catch((error) => {
                 console.error('Failed to write to PTY:', error);
@@ -167,12 +176,16 @@ export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: 
     });
     currentLineRef.current = '';
     onCurrentCommandChange?.('');
+    showPreviewRef.current = false;
     setShowPreview(false);
+    shouldShowPreviewRef.current = false; // フラグをリセット
   };
 
   const handleCancel = () => {
     // プレビューを閉じてコマンドをクリア
+    showPreviewRef.current = false;
     setShowPreview(false);
+    shouldShowPreviewRef.current = false; // フラグをリセット
     // カーソルを行末に戻す処理は不要（ユーザーが手動でクリア）
   };
 
