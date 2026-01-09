@@ -7,10 +7,11 @@ import { listen } from '@tauri-apps/api/event';
 import 'xterm/css/xterm.css';
 import './Terminal.css';
 
-export function Terminal() {
+export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: (cmd: string) => void }) {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
+  const currentLineRef = useRef<string>('');
 
   useEffect(() => {
     if (!terminalRef.current) return;
@@ -67,6 +68,21 @@ export function Terminal() {
       invoke('write_to_pty', { data }).catch((error) => {
         console.error('Failed to write to PTY:', error);
       });
+
+      // 入力を追跡
+      if (data === '\r' || data === '\n') {
+        // Enterが押されたらリセット
+        currentLineRef.current = '';
+        onCurrentCommandChange?.('');
+      } else if (data === '\x7f' || data === '\b') {
+        // バックスペース
+        currentLineRef.current = currentLineRef.current.slice(0, -1);
+        onCurrentCommandChange?.(currentLineRef.current);
+      } else if (data.charCodeAt(0) >= 32) {
+        // 通常の文字
+        currentLineRef.current += data;
+        onCurrentCommandChange?.(currentLineRef.current);
+      }
     });
 
     // リサイズイベント

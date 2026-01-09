@@ -1,9 +1,13 @@
+import { useState } from 'react';
 import { Terminal } from './components/Terminal';
 import { FileTree } from './components/FileTree';
+import { CommandAnalyzer } from './components/CommandAnalyzer';
 import { invoke } from '@tauri-apps/api/core';
 import './App.css';
 
 function App() {
+  const [currentCommand, setCurrentCommand] = useState<string>('');
+
   const handleFileClick = async (path: string, isDir: boolean) => {
     if (isDir) {
       // ディレクトリの場合は cd コマンドを実行
@@ -28,7 +32,8 @@ function App() {
         <FileTree onFileClick={handleFileClick} />
       </div>
       <div className="main-content">
-        <Terminal />
+        <Terminal onCurrentCommandChange={setCurrentCommand} />
+        <CommandAnalyzer currentCommand={currentCommand} />
       </div>
     </div>
   );

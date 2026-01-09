@@ -1,7 +1,9 @@
 mod fs;
+mod parser;
 mod pty;
 
 use fs::FileWatcher;
+use parser::ParseResult;
 use pty::PtyManager;
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -132,6 +134,12 @@ fn watch_directory(
     Ok(())
 }
 
+/// コマンドをパースして危険度を判定
+#[tauri::command]
+fn parse_command(input: String) -> Option<ParseResult> {
+    parser::parse_command(&input)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -155,7 +163,8 @@ pub fn run() {
             resize_pty,
             get_current_directory,
             read_directory,
-            watch_directory
+            watch_directory,
+            parse_command
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
