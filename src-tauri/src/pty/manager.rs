@@ -9,8 +9,10 @@ type Writer = Box<dyn Write + Send>;
 pub struct PtyManager {
     master: Arc<Mutex<Box<dyn MasterPty + Send>>>,
     writer: Arc<Mutex<Writer>>,
-    _child: Arc<Mutex<Box<dyn Child + Send + Sync>>>,
+    #[allow(dead_code)]
+    child: Arc<Mutex<Box<dyn Child + Send + Sync>>>,
     app_handle: AppHandle,
+    current_cwd: Arc<Mutex<String>>,
 }
 
 impl PtyManager {
@@ -50,11 +52,18 @@ impl PtyManager {
         let writer = Arc::new(Mutex::new(writer));
         let child = Arc::new(Mutex::new(child));
 
+        // 初期カレントディレクトリを取得
+        let initial_cwd = std::env::current_dir()
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_else(|_| "/".to_string());
+        let current_cwd = Arc::new(Mutex::new(initial_cwd));
+
         let manager = Self {
             master: Arc::clone(&master),
             writer: Arc::clone(&writer),
-            _child: Arc::clone(&child),
+            child: Arc::clone(&child),
             app_handle: app_handle.clone(),
+            current_cwd: Arc::clone(&current_cwd),
         };
 
         // 出力を読み取るスレッドを起動
@@ -117,6 +126,59 @@ impl PtyManager {
                 }
             }
         });
+    }
+
+    /// シェルプロセスのカレントディレクトリを取得
+    pub fn get_shell_cwd(&self) -> Result<String, String> {
+        let child = self.child.lock().unwrap();
+
+        #[cfg(unix)]
+        {
+            use std::process::Command;
+
+            // PIDを取得
+            let pid = child.process_id()
+                .ok_or_else(|| "Failed to get process ID".to_string())?;
+
+            #[cfg(target_os = "macos")]
+            {
+                // macOSではlsofを使用
+                let output = Command::new("lsof")
+                    .args(&["-a", "-p", &pid.to_string(), "-d", "cwd", "-Fn"])
+                    .output()
+                    .map_err(|e| format!("Failed to execute lsof: {}", e))?;
+
+                let output_str = String::from_utf8_lossy(&output.stdout);
+                // lsof -Fn の出力フォーマット: "n<path>"
+                for line in output_str.lines() {
+                    if line.starts_with('n') {
+                        let new_cwd = line[1..].to_string();
+                        // キャッシュも更新
+                        *self.current_cwd.lock().unwrap() = new_cwd.clone();
+                        return Ok(new_cwd);
+                    }
+                }
+                Err("Failed to parse lsof output".to_string())
+            }
+
+            #[cfg(target_os = "linux")]
+            {
+                // Linuxでは /proc/<pid>/cwd を読み取る
+                let cwd_path = format!("/proc/{}/cwd", pid);
+                let cwd = std::fs::read_link(&cwd_path)
+                    .map(|p| p.to_string_lossy().to_string())
+                    .map_err(|e| format!("Failed to read /proc/*/cwd: {}", e))?;
+                // キャッシュも更新
+                *self.current_cwd.lock().unwrap() = cwd.clone();
+                Ok(cwd)
+            }
+        }
+
+        #[cfg(target_os = "windows")]
+        {
+            // Windowsの場合は現在実装していない
+            Err("get_shell_cwd not implemented for Windows".to_string())
+        }
     }
 
     /// プラットフォームに応じたシェルを取得

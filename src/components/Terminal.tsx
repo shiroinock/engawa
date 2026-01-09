@@ -126,6 +126,12 @@ export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: 
               invoke('write_to_pty', { data: '\r' }).catch((error) => {
                 console.error('Failed to write to PTY:', error);
               });
+
+              // コマンド実行後にカレントディレクトリ更新イベントを発火
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('engawa-command-executed'));
+              }, 100);
+
               currentLineRef.current = '';
               onCurrentCommandChange?.('');
             }
@@ -181,6 +187,12 @@ export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: 
     invoke('write_to_pty', { data: '\r' }).catch((error) => {
       console.error('Failed to write to PTY:', error);
     });
+
+    // コマンド実行後にカレントディレクトリ更新イベントを発火
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('engawa-command-executed'));
+    }, 100);
+
     currentLineRef.current = '';
     onCurrentCommandChange?.('');
     showPreviewRef.current = false;

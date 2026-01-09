@@ -57,12 +57,21 @@ fn resize_pty(state: State<AppState>, cols: u16, rows: u16) -> Result<(), String
     }
 }
 
-/// カレントディレクトリを取得
+/// カレントディレクトリを取得（PTYのシェルプロセスのカレントディレクトリ）
 #[tauri::command]
-fn get_current_directory() -> Result<String, String> {
-    std::env::current_dir()
-        .map(|path| path.to_string_lossy().to_string())
-        .map_err(|e| format!("Failed to get current directory: {}", e))
+fn get_current_directory(state: tauri::State<AppState>) -> Result<String, String> {
+    let pty_manager = state.pty_manager.lock().unwrap();
+
+    if let Some(ref manager) = *pty_manager {
+        // PTYのシェルプロセスのカレントディレクトリを取得
+        // lsofを実行してリアルタイムで取得
+        manager.get_shell_cwd()
+    } else {
+        // PTYが作成されていない場合はRustプロセスのカレントディレクトリを返す
+        std::env::current_dir()
+            .map(|path| path.to_string_lossy().to_string())
+            .map_err(|e| format!("Failed to get current directory: {}", e))
+    }
 }
 
 /// ディレクトリの内容を読み取る

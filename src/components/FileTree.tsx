@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Tree, NodeRendererProps } from 'react-arborist';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
@@ -23,6 +23,7 @@ interface TreeNode {
 export function FileTree({ onFileClick }: { onFileClick: (path: string, isDir: boolean) => void }) {
   const [data, setData] = useState<TreeNode[]>([]);
   const [currentDir, setCurrentDir] = useState<string>('');
+  const previousDirRef = useRef<string>('');
 
   // ディレクトリの内容を読み込む
   const loadDirectory = async (path: string) => {
@@ -35,12 +36,16 @@ export function FileTree({ onFileClick }: { onFileClick: (path: string, isDir: b
     }
   };
 
-  // カレントディレクトリを取得
+  // カレントディレクトリを取得（変更があった時だけ更新）
   const loadCurrentDirectory = async () => {
     try {
       const dir = await invoke<string>('get_current_directory');
-      setCurrentDir(dir);
-      await loadDirectory(dir);
+      // ディレクトリが実際に変わった時だけ更新
+      if (dir !== previousDirRef.current) {
+        previousDirRef.current = dir;
+        setCurrentDir(dir);
+        await loadDirectory(dir);
+      }
     } catch (error) {
       console.error('Failed to get current directory:', error);
     }
@@ -66,19 +71,16 @@ export function FileTree({ onFileClick }: { onFileClick: (path: string, isDir: b
       loadCurrentDirectory();
     });
 
-    // PTY出力を監視してcdコマンドを検知
-    const unlistenPtyOutput = listen<string>('pty-output', () => {
-      // cdコマンドが実行されたかもしれないので、ディレクトリを更新
+    // コマンド実行イベントをリッスン
+    const handleCommandExecuted = () => {
+      console.log('Command executed, updating directory');
       loadCurrentDirectory();
-    });
-
-    // 定期的に現在ディレクトリをチェック（500ms毎）
-    const interval = setInterval(loadCurrentDirectory, 500);
+    };
+    window.addEventListener('engawa-command-executed', handleCommandExecuted);
 
     return () => {
       unlistenFileChanged.then((fn) => fn());
-      unlistenPtyOutput.then((fn) => fn());
-      clearInterval(interval);
+      window.removeEventListener('engawa-command-executed', handleCommandExecuted);
     };
   }, []);
 

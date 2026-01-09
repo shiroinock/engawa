@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import './Breadcrumb.css';
@@ -6,16 +6,21 @@ import './Breadcrumb.css';
 export function Breadcrumb() {
   const [currentPath, setCurrentPath] = useState<string>('');
   const [pathSegments, setPathSegments] = useState<string[]>([]);
+  const previousPathRef = useRef<string>('');
 
   useEffect(() => {
     const updateCurrentDirectory = async () => {
       try {
         const path = await invoke<string>('get_current_directory');
-        setCurrentPath(path);
+        // パスが実際に変わった時だけ更新
+        if (path !== previousPathRef.current) {
+          previousPathRef.current = path;
+          setCurrentPath(path);
 
-        // パスをセグメントに分割
-        const segments = path.split('/').filter(Boolean);
-        setPathSegments(segments);
+          // パスをセグメントに分割
+          const segments = path.split('/').filter(Boolean);
+          setPathSegments(segments);
+        }
       } catch (error) {
         console.error('Failed to get current directory:', error);
       }
@@ -23,19 +28,14 @@ export function Breadcrumb() {
 
     updateCurrentDirectory();
 
-    // PTY出力を監視してcdコマンドを検知
-    const unlisten = listen<string>('pty-output', () => {
-      // cdコマンドが実行されたかもしれないので、ディレクトリを更新
-      // （簡易的な実装: 定期的にチェック）
+    // コマンド実行イベントをリッスン
+    const handleCommandExecuted = () => {
       updateCurrentDirectory();
-    });
-
-    // 定期的に現在ディレクトリをチェック（500ms毎）
-    const interval = setInterval(updateCurrentDirectory, 500);
+    };
+    window.addEventListener('engawa-command-executed', handleCommandExecuted);
 
     return () => {
-      unlisten.then((fn) => fn());
-      clearInterval(interval);
+      window.removeEventListener('engawa-command-executed', handleCommandExecuted);
     };
   }, []);
 
@@ -54,6 +54,10 @@ export function Breadcrumb() {
     try {
       // cdコマンドを実行
       await invoke('write_to_pty', { data: `cd "${targetPath}"\n` });
+      // コマンド実行後にディレクトリ更新イベントを発火
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('engawa-command-executed'));
+      }, 100);
     } catch (error) {
       console.error('Failed to change directory:', error);
     }
@@ -62,6 +66,10 @@ export function Breadcrumb() {
   const handleRootClick = async () => {
     try {
       await invoke('write_to_pty', { data: 'cd /\n' });
+      // コマンド実行後にディレクトリ更新イベントを発火
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('engawa-command-executed'));
+      }, 100);
     } catch (error) {
       console.error('Failed to change directory:', error);
     }
