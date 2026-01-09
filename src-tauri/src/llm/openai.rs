@@ -17,7 +17,7 @@ struct OpenAiRequest {
     model: String,
     messages: Vec<Message>,
     temperature: f32,
-    max_tokens: u32,
+    max_completion_tokens: u32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -59,14 +59,14 @@ impl OpenAiProvider {
             model: self.config.model.clone(),
             messages,
             temperature: 0.7,
-            max_tokens: 500,
+            max_completion_tokens: 500,
         };
 
         // リクエスト内容をログ出力
         log::info!("=== OpenAI API Request ===");
         log::info!("Model: {}", request.model);
         log::info!("Temperature: {}", request.temperature);
-        log::info!("Max tokens: {}", request.max_tokens);
+        log::info!("Max completion tokens: {}", request.max_completion_tokens);
         log::info!("Messages:");
         for (i, msg) in request.messages.iter().enumerate() {
             log::info!("  [{}] Role: {}", i, msg.role);
