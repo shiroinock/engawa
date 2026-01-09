@@ -10,9 +10,12 @@ function App() {
 
   const handleFileClick = async (path: string, isDir: boolean) => {
     if (isDir) {
-      // ディレクトリの場合は cd コマンドを実行
+      // ディレクトリの場合は cd コマンドを実行（相対パス）
+      // ファイルツリーに表示されるのはカレントディレクトリ直下なので、
+      // ディレクトリ名だけを取り出す
+      const dirName = path.split('/').pop() || '';
       try {
-        await invoke('write_to_pty', { data: `cd "${path}"\n` });
+        await invoke('write_to_pty', { data: `cd "${dirName}"\n` });
         // コマンド実行後にディレクトリ更新イベントを発火
         setTimeout(() => {
           window.dispatchEvent(new CustomEvent('engawa-command-executed'));
@@ -21,9 +24,10 @@ function App() {
         console.error('Failed to change directory:', error);
       }
     } else {
-      // ファイルの場合はパスを挿入
+      // ファイルの場合はファイル名だけを挿入（相対パス）
+      const fileName = path.split('/').pop() || '';
       try {
-        await invoke('write_to_pty', { data: `"${path}" ` });
+        await invoke('write_to_pty', { data: `"${fileName}" ` });
       } catch (error) {
         console.error('Failed to insert path:', error);
       }

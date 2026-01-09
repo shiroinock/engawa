@@ -48,12 +48,13 @@ export function Breadcrumb() {
   };
 
   const handleSegmentClick = async (index: number) => {
-    // クリックしたセグメントまでのパスを構築
-    const targetPath = '/' + pathSegments.slice(0, index + 1).join('/');
+    // 親ディレクトリへの移動は相対パスで
+    const levelsUp = pathSegments.length - index - 1;
+    const relativePath = '../'.repeat(levelsUp).slice(0, -1); // 最後の/を削除
 
     try {
-      // cdコマンドを実行
-      await invoke('write_to_pty', { data: `cd "${targetPath}"\n` });
+      // cdコマンドを実行（相対パス）
+      await invoke('write_to_pty', { data: `cd ${relativePath}\n` });
       // コマンド実行後にディレクトリ更新イベントを発火
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('engawa-command-executed'));
