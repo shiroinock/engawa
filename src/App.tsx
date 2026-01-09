@@ -14,8 +14,10 @@ function App() {
       // ファイルツリーに表示されるのはカレントディレクトリ直下なので、
       // ディレクトリ名だけを取り出す
       const dirName = path.split('/').pop() || '';
+      // スペースを含む場合のみ引用符で囲む
+      const escapedName = dirName.includes(' ') ? `"${dirName}"` : dirName;
       try {
-        await invoke('write_to_pty', { data: `cd "${dirName}"\n` });
+        await invoke('write_to_pty', { data: `cd ${escapedName}\n` });
         // コマンド実行後にディレクトリ更新イベントを発火
         setTimeout(() => {
           window.dispatchEvent(new CustomEvent('engawa-command-executed'));
@@ -26,8 +28,10 @@ function App() {
     } else {
       // ファイルの場合はファイル名だけを挿入（相対パス）
       const fileName = path.split('/').pop() || '';
+      // スペースを含む場合のみ引用符で囲む
+      const escapedName = fileName.includes(' ') ? `"${fileName}"` : fileName;
       try {
-        await invoke('write_to_pty', { data: `"${fileName}" ` });
+        await invoke('write_to_pty', { data: `${escapedName} ` });
       } catch (error) {
         console.error('Failed to insert path:', error);
       }
