@@ -8,4 +8,4 @@ pub use cache::{CacheEntry, LlmCache};
 pub use config::{CommandContext, LlmConfig, LlmProviderType};
 pub use cost_tracker::{CostRecord, CostSettings, CostTracker};
 pub use openai::OpenAiProvider;
-pub use provider::LlmProvider;
+pub use provider::{LlmProvider, UsageInfo};

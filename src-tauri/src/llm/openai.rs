@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 use super::config::{CommandContext, LlmConfig};
-use super::provider::{LlmError, LlmProvider};
+use super::provider::{LlmError, LlmProvider, UsageInfo};
 
 /// OpenAI APIクライアント
 pub struct OpenAiProvider {
@@ -98,7 +98,7 @@ impl OpenAiProvider {
     }
 
     /// OpenAI APIを呼び出し（コンテンツとトークン使用量を返す）
-    async fn call_api(&self, messages: Vec<Message>) -> Result<(String, Option<Usage>), LlmError> {
+    async fn call_api(&self, messages: Vec<Message>) -> Result<(String, Option<UsageInfo>), LlmError> {
         let request = OpenAiRequest {
             model: self.config.model.clone(),
             messages,
@@ -190,17 +190,22 @@ impl OpenAiProvider {
             response_content.len()
         );
 
-        // トークン使用量をログ出力
-        if let Some(ref usage) = api_response.usage {
+        // トークン使用量をログ出力とUsageInfo変換
+        let usage_info = api_response.usage.map(|usage| {
             log::info!(
                 "Token usage: input={}, output={}, total={}",
                 usage.prompt_tokens,
                 usage.completion_tokens,
                 usage.total_tokens
             );
-        }
+            UsageInfo {
+                input_tokens: usage.prompt_tokens,
+                output_tokens: usage.completion_tokens,
+                total_tokens: usage.total_tokens,
+            }
+        });
 
-        Ok((response_content, api_response.usage))
+        Ok((response_content, usage_info))
     }
 }
 
@@ -210,7 +215,7 @@ impl LlmProvider for OpenAiProvider {
         &self,
         command: &str,
         context: &CommandContext,
-    ) -> Result<String, LlmError> {
+    ) -> Result<(String, Option<UsageInfo>), LlmError> {
         let system_message = Message {
             role: "system".to_string(),
             content: "あなたはターミナル初心者を助けるアシスタントです。シェルコマンドをわかりやすい日本語で説明してください。専門用語は避け、具体例を交えて説明してください。3-5文程度の簡潔な説明にしてください。".to_string(),
@@ -224,15 +229,14 @@ impl LlmProvider for OpenAiProvider {
             ),
         };
 
-        let (content, _usage) = self.call_api(vec![system_message, user_message]).await?;
-        Ok(content)
+        self.call_api(vec![system_message, user_message]).await
     }
 
     async fn translate_natural_language(
         &self,
         input: &str,
         context: &CommandContext,
-    ) -> Result<String, LlmError> {
+    ) -> Result<(String, Option<UsageInfo>), LlmError> {
         let system_message = Message {
             role: "system".to_string(),
             content: format!(
@@ -252,8 +256,7 @@ impl LlmProvider for OpenAiProvider {
             ),
         };
 
-        let (content, _usage) = self.call_api(vec![system_message, user_message]).await?;
-        Ok(content)
+        self.call_api(vec![system_message, user_message]).await
     }
 
     fn provider_name(&self) -> &str {

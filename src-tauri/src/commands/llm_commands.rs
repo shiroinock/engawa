@@ -1,11 +1,12 @@
 use std::sync::Arc;
 use tauri::State;
 
-use crate::llm::{CacheEntry, CommandContext, LlmCache, LlmConfig, LlmProvider, OpenAiProvider, CostTracker, CostSettings, CostRecord};
+use crate::llm::{CacheEntry, CommandContext, LlmCache, LlmConfig, LlmProvider, LlmProviderType, OpenAiProvider, CostTracker, CostSettings, CostRecord};
 
 /// LLMサービスの状態
 pub struct LlmService {
     provider: Option<Arc<dyn LlmProvider>>,
+    config: Option<LlmConfig>,
     cache: Arc<LlmCache>,
     cost_tracker: Arc<CostTracker>,
 }
@@ -14,6 +15,7 @@ impl LlmService {
     pub fn new() -> Self {
         Self {
             provider: None,
+            config: None,
             cache: Arc::new(LlmCache::new(100)),
             cost_tracker: Arc::new(CostTracker::new()),
         }
@@ -23,7 +25,7 @@ impl LlmService {
     pub fn set_provider(&mut self, config: LlmConfig) -> Result<(), String> {
         let provider: Arc<dyn LlmProvider> = match config.provider {
             crate::llm::LlmProviderType::OpenAi => {
-                Arc::new(OpenAiProvider::new(config).map_err(|e| e.to_string())?)
+                Arc::new(OpenAiProvider::new(config.clone()).map_err(|e| e.to_string())?)
             }
             crate::llm::LlmProviderType::Anthropic => {
                 // TODO: Anthropic実装
@@ -32,12 +34,16 @@ impl LlmService {
         };
 
         self.provider = Some(provider);
+        self.config = Some(config);
         Ok(())
     }
 
-    /// プロバイダー、キャッシュ、コストトラッカーを取得（クローン）
-    pub fn get_provider_and_cache(&self) -> Option<(Arc<dyn LlmProvider>, Arc<LlmCache>, Arc<CostTracker>)> {
-        self.provider.as_ref().map(|p| (p.clone(), self.cache.clone(), self.cost_tracker.clone()))
+    /// プロバイダー、キャッシュ、コストトラッカー、設定を取得（クローン）
+    pub fn get_provider_and_cache(&self) -> Option<(Arc<dyn LlmProvider>, Arc<LlmCache>, Arc<CostTracker>, LlmConfig)> {
+        match (&self.provider, &self.config) {
+            (Some(p), Some(c)) => Some((p.clone(), self.cache.clone(), self.cost_tracker.clone(), c.clone())),
+            _ => None,
+        }
     }
 
     /// コストトラッカーを取得
@@ -70,8 +76,8 @@ pub async fn explain_command_with_llm(
     context: CommandContext,
     llm_service: State<'_, Arc<std::sync::Mutex<LlmService>>>,
 ) -> Result<String, String> {
-    // プロバイダー、キャッシュ、コストトラッカーをクローン（Mutexを早期解放）
-    let (provider, cache, _cost_tracker) = {
+    // プロバイダー、キャッシュ、コストトラッカー、設定をクローン（Mutexを早期解放）
+    let (provider, cache, cost_tracker, config) = {
         let service = llm_service.lock().unwrap();
         service
             .get_provider_and_cache()
@@ -86,10 +92,31 @@ pub async fn explain_command_with_llm(
 
     // LLM API呼び出し（Mutexから解放済み）
     log::info!("Calling LLM API for command: {}", command);
-    let result = provider
+    let (result, usage_info) = provider
         .explain_command(&command, &context)
         .await
         .map_err(|e| e.to_string())?;
+
+    // コスト記録
+    if let Some(usage) = usage_info {
+        let provider_name = match config.provider {
+            LlmProviderType::OpenAi => "OpenAI",
+            LlmProviderType::Anthropic => "Anthropic",
+        };
+        cost_tracker.record_usage(
+            provider_name.to_string(),
+            config.model.clone(),
+            usage.input_tokens,
+            usage.output_tokens,
+        );
+        log::info!(
+            "Cost recorded: provider={}, model={}, input={}, output={}",
+            provider_name,
+            config.model,
+            usage.input_tokens,
+            usage.output_tokens
+        );
+    }
 
     // キャッシュに保存
     cache.set(&command, &context, "explain", result.clone());
@@ -104,8 +131,8 @@ pub async fn translate_natural_language_to_command(
     context: CommandContext,
     llm_service: State<'_, Arc<std::sync::Mutex<LlmService>>>,
 ) -> Result<String, String> {
-    // プロバイダー、キャッシュ、コストトラッカーをクローン（Mutexを早期解放）
-    let (provider, cache, _cost_tracker) = {
+    // プロバイダー、キャッシュ、コストトラッカー、設定をクローン（Mutexを早期解放）
+    let (provider, cache, cost_tracker, config) = {
         let service = llm_service.lock().unwrap();
         service
             .get_provider_and_cache()
@@ -120,10 +147,31 @@ pub async fn translate_natural_language_to_command(
 
     // LLM API呼び出し（Mutexから解放済み）
     log::info!("Calling LLM API for natural language: {}", input);
-    let result = provider
+    let (result, usage_info) = provider
         .translate_natural_language(&input, &context)
         .await
         .map_err(|e| e.to_string())?;
+
+    // コスト記録
+    if let Some(usage) = usage_info {
+        let provider_name = match config.provider {
+            LlmProviderType::OpenAi => "OpenAI",
+            LlmProviderType::Anthropic => "Anthropic",
+        };
+        cost_tracker.record_usage(
+            provider_name.to_string(),
+            config.model.clone(),
+            usage.input_tokens,
+            usage.output_tokens,
+        );
+        log::info!(
+            "Cost recorded: provider={}, model={}, input={}, output={}",
+            provider_name,
+            config.model,
+            usage.input_tokens,
+            usage.output_tokens
+        );
+    }
 
     // キャッシュに保存
     cache.set(&input, &context, "translate", result.clone());

@@ -3,6 +3,14 @@ use serde::{Deserialize, Serialize};
 
 use super::config::CommandContext;
 
+/// トークン使用量情報
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UsageInfo {
+    pub input_tokens: u32,
+    pub output_tokens: u32,
+    pub total_tokens: u32,
+}
+
 /// LLMエラー型
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum LlmError {
@@ -38,19 +46,19 @@ impl std::error::Error for LlmError {}
 /// LLMプロバイダーの抽象インターフェース
 #[async_trait]
 pub trait LlmProvider: Send + Sync {
-    /// コマンドの詳細な説明を生成
+    /// コマンドの詳細な説明を生成（コンテンツとトークン使用量を返す）
     async fn explain_command(
         &self,
         command: &str,
         context: &CommandContext,
-    ) -> Result<String, LlmError>;
+    ) -> Result<(String, Option<UsageInfo>), LlmError>;
 
-    /// 自然言語をシェルコマンドに変換
+    /// 自然言語をシェルコマンドに変換（コンテンツとトークン使用量を返す）
     async fn translate_natural_language(
         &self,
         input: &str,
         context: &CommandContext,
-    ) -> Result<String, LlmError>;
+    ) -> Result<(String, Option<UsageInfo>), LlmError>;
 
     /// プロバイダー名を取得
     #[allow(dead_code)]
