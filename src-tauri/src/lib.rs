@@ -212,6 +212,10 @@ pub fn run() {
             commands::llm_commands::configure_llm_provider,
             commands::llm_commands::explain_command_with_llm,
             commands::llm_commands::translate_natural_language_to_command,
+            commands::llm_commands::get_cost_settings,
+            commands::llm_commands::update_cost_settings,
+            commands::llm_commands::get_cost_info,
+            commands::llm_commands::get_cost_records,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

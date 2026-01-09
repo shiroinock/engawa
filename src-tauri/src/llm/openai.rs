@@ -30,11 +30,20 @@ struct Message {
 #[derive(Debug, Deserialize)]
 struct OpenAiResponse {
     choices: Vec<Choice>,
+    #[serde(default)]
+    usage: Option<Usage>,
 }
 
 #[derive(Debug, Deserialize)]
 struct Choice {
     message: Message,
+}
+
+#[derive(Debug, Deserialize)]
+struct Usage {
+    prompt_tokens: u32,
+    completion_tokens: u32,
+    total_tokens: u32,
 }
 
 impl OpenAiProvider {
@@ -88,8 +97,8 @@ impl OpenAiProvider {
         Ok(Self { client, config })
     }
 
-    /// OpenAI APIを呼び出し
-    async fn call_api(&self, messages: Vec<Message>) -> Result<String, LlmError> {
+    /// OpenAI APIを呼び出し（コンテンツとトークン使用量を返す）
+    async fn call_api(&self, messages: Vec<Message>) -> Result<(String, Option<Usage>), LlmError> {
         let request = OpenAiRequest {
             model: self.config.model.clone(),
             messages,
@@ -181,7 +190,17 @@ impl OpenAiProvider {
             response_content.len()
         );
 
-        Ok(response_content)
+        // トークン使用量をログ出力
+        if let Some(ref usage) = api_response.usage {
+            log::info!(
+                "Token usage: input={}, output={}, total={}",
+                usage.prompt_tokens,
+                usage.completion_tokens,
+                usage.total_tokens
+            );
+        }
+
+        Ok((response_content, api_response.usage))
     }
 }
 
@@ -205,7 +224,8 @@ impl LlmProvider for OpenAiProvider {
             ),
         };
 
-        self.call_api(vec![system_message, user_message]).await
+        let (content, _usage) = self.call_api(vec![system_message, user_message]).await?;
+        Ok(content)
     }
 
     async fn translate_natural_language(
@@ -232,7 +252,8 @@ impl LlmProvider for OpenAiProvider {
             ),
         };
 
-        self.call_api(vec![system_message, user_message]).await
+        let (content, _usage) = self.call_api(vec![system_message, user_message]).await?;
+        Ok(content)
     }
 
     fn provider_name(&self) -> &str {

@@ -1,12 +1,13 @@
 use std::sync::Arc;
 use tauri::State;
 
-use crate::llm::{CommandContext, LlmCache, LlmConfig, LlmProvider, OpenAiProvider};
+use crate::llm::{CommandContext, LlmCache, LlmConfig, LlmProvider, OpenAiProvider, CostTracker, CostSettings, CostRecord};
 
 /// LLMサービスの状態
 pub struct LlmService {
     provider: Option<Arc<dyn LlmProvider>>,
     cache: Arc<LlmCache>,
+    cost_tracker: Arc<CostTracker>,
 }
 
 impl LlmService {
@@ -14,6 +15,7 @@ impl LlmService {
         Self {
             provider: None,
             cache: Arc::new(LlmCache::new(100)),
+            cost_tracker: Arc::new(CostTracker::new()),
         }
     }
 
@@ -33,9 +35,14 @@ impl LlmService {
         Ok(())
     }
 
-    /// プロバイダーとキャッシュを取得（クローン）
-    pub fn get_provider_and_cache(&self) -> Option<(Arc<dyn LlmProvider>, Arc<LlmCache>)> {
-        self.provider.as_ref().map(|p| (p.clone(), self.cache.clone()))
+    /// プロバイダー、キャッシュ、コストトラッカーを取得（クローン）
+    pub fn get_provider_and_cache(&self) -> Option<(Arc<dyn LlmProvider>, Arc<LlmCache>, Arc<CostTracker>)> {
+        self.provider.as_ref().map(|p| (p.clone(), self.cache.clone(), self.cost_tracker.clone()))
+    }
+
+    /// コストトラッカーを取得
+    pub fn get_cost_tracker(&self) -> Arc<CostTracker> {
+        self.cost_tracker.clone()
     }
 
 }
@@ -63,8 +70,8 @@ pub async fn explain_command_with_llm(
     context: CommandContext,
     llm_service: State<'_, Arc<std::sync::Mutex<LlmService>>>,
 ) -> Result<String, String> {
-    // プロバイダーとキャッシュをクローン（Mutexを早期解放）
-    let (provider, cache) = {
+    // プロバイダー、キャッシュ、コストトラッカーをクローン（Mutexを早期解放）
+    let (provider, cache, _cost_tracker) = {
         let service = llm_service.lock().unwrap();
         service
             .get_provider_and_cache()
@@ -97,8 +104,8 @@ pub async fn translate_natural_language_to_command(
     context: CommandContext,
     llm_service: State<'_, Arc<std::sync::Mutex<LlmService>>>,
 ) -> Result<String, String> {
-    // プロバイダーとキャッシュをクローン（Mutexを早期解放）
-    let (provider, cache) = {
+    // プロバイダー、キャッシュ、コストトラッカーをクローン（Mutexを早期解放）
+    let (provider, cache, _cost_tracker) = {
         let service = llm_service.lock().unwrap();
         service
             .get_provider_and_cache()
@@ -122,4 +129,57 @@ pub async fn translate_natural_language_to_command(
     cache.set(&input, &context, "translate", result.clone());
 
     Ok(result)
+}
+
+/// コスト設定を取得
+#[tauri::command]
+pub fn get_cost_settings(
+    llm_service: State<'_, Arc<std::sync::Mutex<LlmService>>>,
+) -> Result<CostSettings, String> {
+    let service = llm_service.lock().unwrap();
+    let cost_tracker = service.get_cost_tracker();
+    Ok(cost_tracker.get_settings())
+}
+
+/// コスト設定を更新
+#[tauri::command]
+pub fn update_cost_settings(
+    settings: CostSettings,
+    llm_service: State<'_, Arc<std::sync::Mutex<LlmService>>>,
+) -> Result<(), String> {
+    let service = llm_service.lock().unwrap();
+    let cost_tracker = service.get_cost_tracker();
+    cost_tracker.update_settings(settings);
+    Ok(())
+}
+
+/// コスト情報を取得
+#[tauri::command]
+pub fn get_cost_info(
+    llm_service: State<'_, Arc<std::sync::Mutex<LlmService>>>,
+) -> Result<serde_json::Value, String> {
+    let service = llm_service.lock().unwrap();
+    let cost_tracker = service.get_cost_tracker();
+
+    let daily_cost = cost_tracker.get_daily_cost();
+    let monthly_cost = cost_tracker.get_monthly_cost();
+    let settings = cost_tracker.get_settings();
+
+    Ok(serde_json::json!({
+        "daily_cost": daily_cost,
+        "monthly_cost": monthly_cost,
+        "daily_limit": settings.daily_limit,
+        "monthly_limit": settings.monthly_limit,
+        "enabled": settings.enabled,
+    }))
+}
+
+/// コスト履歴を取得
+#[tauri::command]
+pub fn get_cost_records(
+    llm_service: State<'_, Arc<std::sync::Mutex<LlmService>>>,
+) -> Result<Vec<CostRecord>, String> {
+    let service = llm_service.lock().unwrap();
+    let cost_tracker = service.get_cost_tracker();
+    Ok(cost_tracker.get_all_records())
 }
