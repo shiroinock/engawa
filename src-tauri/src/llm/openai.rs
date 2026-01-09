@@ -38,6 +38,40 @@ struct Choice {
 }
 
 impl OpenAiProvider {
+    /// カレントディレクトリパスをマスキング（機密情報の保護）
+    fn mask_directory_path(path: &str) -> String {
+        // /Users/username/projects/myapp -> /Users/[user]/projects/[dir]
+        let parts: Vec<&str> = path.split('/').collect();
+
+        if parts.is_empty() {
+            return "[directory]".to_string();
+        }
+
+        let masked_parts: Vec<String> = parts
+            .iter()
+            .enumerate()
+            .map(|(i, part)| {
+                if part.is_empty() {
+                    String::new()
+                } else if i == 0 {
+                    // ルート要素はそのまま
+                    part.to_string()
+                } else if i == 1 && (parts[0] == "" || parts[0] == "/") && *part == "Users" {
+                    // /Users はそのまま
+                    part.to_string()
+                } else if i == 2 && parts.get(1) == Some(&"Users") {
+                    // ユーザー名をマスク
+                    "[user]".to_string()
+                } else {
+                    // その他のディレクトリ名をマスク
+                    "[dir]".to_string()
+                }
+            })
+            .collect();
+
+        masked_parts.join("/")
+    }
+
     /// 新しいOpenAIプロバイダーを作成
     pub fn new(config: LlmConfig) -> Result<Self, LlmError> {
         if config.api_key.is_empty() {
@@ -166,8 +200,8 @@ impl LlmProvider for OpenAiProvider {
         let user_message = Message {
             role: "user".to_string(),
             content: format!(
-                "以下のコマンドを説明してください。\n\nコマンド: {}\nカレントディレクトリ: {}\nシェル: {}\n危険度: {}",
-                command, context.current_directory, context.shell_type, context.risk_level
+                "以下のコマンドを説明してください。\n\nコマンド: {}\nシェル: {}\n危険度: {}",
+                command, context.shell_type, context.risk_level
             ),
         };
 
@@ -187,11 +221,14 @@ impl LlmProvider for OpenAiProvider {
             ),
         };
 
+        // カレントディレクトリパスをマスキング（機密情報の保護）
+        let masked_dir = Self::mask_directory_path(&context.current_directory);
+
         let user_message = Message {
             role: "user".to_string(),
             content: format!(
                 "カレントディレクトリ: {}\n\n以下の指示をシェルコマンドに変換してください:\n{}",
-                context.current_directory, input
+                masked_dir, input
             ),
         };
 
