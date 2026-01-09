@@ -16,7 +16,6 @@ use tauri::State;
 struct AppState {
     pty_manager: Mutex<Option<PtyManager>>,
     file_watcher: Mutex<Option<FileWatcher>>,
-    llm_service: Arc<Mutex<LlmService>>,
 }
 
 /// PTYセッションを作成
@@ -199,8 +198,8 @@ pub fn run() {
         .manage(AppState {
             pty_manager: Mutex::new(None),
             file_watcher: Mutex::new(None),
-            llm_service: Arc::new(Mutex::new(LlmService::new())),
         })
+        .manage(Arc::new(Mutex::new(LlmService::new())))
         .invoke_handler(tauri::generate_handler![
             create_pty,
             write_to_pty,
