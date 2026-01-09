@@ -83,23 +83,42 @@ impl OpenAiProvider {
             .send()
             .await
             .map_err(|e| {
+                let error_msg = if e.is_timeout() {
+                    "Request timeout".to_string()
+                } else {
+                    format!("Request failed: {}", e)
+                };
+                log::error!("=== OpenAI API Error ===");
+                log::error!("{}", error_msg);
+                log::error!("========================");
                 if e.is_timeout() {
                     LlmError::Timeout
                 } else {
-                    LlmError::ApiError(format!("Request failed: {}", e))
+                    LlmError::ApiError(error_msg)
                 }
             })?;
 
         let status = response.status();
+        log::info!("API Response Status: {}", status);
+
         if status == 401 {
+            log::error!("=== OpenAI API Error ===");
+            log::error!("Authentication failed (401)");
+            log::error!("========================");
             return Err(LlmError::AuthenticationError);
         } else if status == 429 {
+            log::error!("=== OpenAI API Error ===");
+            log::error!("Rate limit exceeded (429)");
+            log::error!("========================");
             return Err(LlmError::RateLimitExceeded);
         } else if !status.is_success() {
             let error_text = response
                 .text()
                 .await
                 .unwrap_or_else(|_| "Unknown error".to_string());
+            log::error!("=== OpenAI API Error ===");
+            log::error!("Status {}: {}", status, error_text);
+            log::error!("========================");
             return Err(LlmError::ApiError(format!(
                 "API returned status {}: {}",
                 status, error_text
@@ -107,14 +126,23 @@ impl OpenAiProvider {
         }
 
         let api_response: OpenAiResponse = response.json().await.map_err(|e| {
-            LlmError::ApiError(format!("Failed to parse response: {}", e))
+            let error_msg = format!("Failed to parse response: {}", e);
+            log::error!("=== OpenAI API Error ===");
+            log::error!("{}", error_msg);
+            log::error!("========================");
+            LlmError::ApiError(error_msg)
         })?;
 
         let response_content = api_response
             .choices
             .first()
             .map(|choice| choice.message.content.clone())
-            .ok_or_else(|| LlmError::ApiError("No response from API".to_string()))?;
+            .ok_or_else(|| {
+                log::error!("=== OpenAI API Error ===");
+                log::error!("No response from API");
+                log::error!("========================");
+                LlmError::ApiError("No response from API".to_string())
+            })?;
 
         // レスポンス内容をログ出力
         log::info!("=== OpenAI API Response ===");
