@@ -1,7 +1,7 @@
 use notify::{RecommendedWatcher, RecursiveMode};
 use notify_debouncer_full::{new_debouncer, DebounceEventResult, Debouncer, FileIdMap};
 use serde::Serialize;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
@@ -17,6 +17,7 @@ pub struct FileNode {
 /// ファイルシステム監視を管理する構造体
 pub struct FileWatcher {
     _debouncer: Arc<Mutex<Debouncer<RecommendedWatcher, FileIdMap>>>,
+    #[allow(dead_code)]
     app_handle: AppHandle,
 }
 
@@ -62,59 +63,5 @@ impl FileWatcher {
                 }
             }
         }
-    }
-
-    /// ディレクトリの内容を読み取る
-    pub fn read_directory(&self, path: &Path) -> Result<Vec<FileNode>, String> {
-        let entries = std::fs::read_dir(path)
-            .map_err(|e| format!("Failed to read directory: {}", e))?;
-
-        let mut nodes = Vec::new();
-
-        for entry in entries {
-            let entry = entry.map_err(|e| format!("Failed to read entry: {}", e))?;
-            let path = entry.path();
-            let metadata = entry
-                .metadata()
-                .map_err(|e| format!("Failed to read metadata: {}", e))?;
-
-            let name = entry
-                .file_name()
-                .to_string_lossy()
-                .to_string();
-
-            // 隠しファイルをスキップ
-            if name.starts_with('.') {
-                continue;
-            }
-
-            let is_dir = metadata.is_dir();
-            let children = if is_dir {
-                // ディレクトリの場合、子要素は後で読み込む（遅延ロード）
-                Some(Vec::new())
-            } else {
-                None
-            };
-
-            nodes.push(FileNode {
-                name,
-                path: path.to_string_lossy().to_string(),
-                is_dir,
-                children,
-            });
-        }
-
-        // 名前でソート（ディレクトリを先に）
-        nodes.sort_by(|a, b| {
-            if a.is_dir == b.is_dir {
-                a.name.to_lowercase().cmp(&b.name.to_lowercase())
-            } else if a.is_dir {
-                std::cmp::Ordering::Less
-            } else {
-                std::cmp::Ordering::Greater
-            }
-        });
-
-        Ok(nodes)
     }
 }
