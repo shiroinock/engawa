@@ -60,24 +60,15 @@ impl OpenAiProvider {
             model: self.config.model.clone(),
             messages,
             temperature: None, // モデルのデフォルト値を使用
-            max_completion_tokens: 500,
+            max_completion_tokens: 2000, // reasoning モデル用に増量（推論 + 出力）
         };
 
         // リクエスト内容をログ出力
-        log::info!("=== OpenAI API Request ===");
-        log::info!("Model: {}", request.model);
-        if let Some(temp) = request.temperature {
-            log::info!("Temperature: {}", temp);
-        } else {
-            log::info!("Temperature: default (not specified)");
-        }
-        log::info!("Max completion tokens: {}", request.max_completion_tokens);
-        log::info!("Messages:");
-        for (i, msg) in request.messages.iter().enumerate() {
-            log::info!("  [{}] Role: {}", i, msg.role);
-            log::info!("  [{}] Content: {}", i, msg.content);
-        }
-        log::info!("========================");
+        log::info!(
+            "OpenAI API Request: model={}, max_tokens={}",
+            request.model,
+            request.max_completion_tokens
+        );
 
         let response = self
             .client
@@ -104,8 +95,8 @@ impl OpenAiProvider {
             })?;
 
         let status = response.status();
-        log::info!("API Response Status: {}", status);
 
+        // エラーステータスの場合
         if status == 401 {
             log::error!("=== OpenAI API Error ===");
             log::error!("Authentication failed (401)");
@@ -130,6 +121,7 @@ impl OpenAiProvider {
             )));
         }
 
+        // JSONをパース
         let api_response: OpenAiResponse = response.json().await.map_err(|e| {
             let error_msg = format!("Failed to parse response: {}", e);
             log::error!("=== OpenAI API Error ===");
@@ -144,15 +136,16 @@ impl OpenAiProvider {
             .map(|choice| choice.message.content.clone())
             .ok_or_else(|| {
                 log::error!("=== OpenAI API Error ===");
-                log::error!("No response from API");
+                log::error!("No response from API (choices array is empty)");
                 log::error!("========================");
                 LlmError::ApiError("No response from API".to_string())
             })?;
 
-        // レスポンス内容をログ出力
-        log::info!("=== OpenAI API Response ===");
-        log::info!("Content: {}", response_content);
-        log::info!("===========================");
+        // レスポンス内容をログ出力（長さのみ）
+        log::info!(
+            "OpenAI API Response: {} characters",
+            response_content.len()
+        );
 
         Ok(response_content)
     }
