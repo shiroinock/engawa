@@ -1,18 +1,22 @@
+mod commands;
 mod fs;
+mod llm;
 mod parser;
 mod pty;
 
+use commands::LlmService;
 use fs::FileWatcher;
 use parser::ParseResult;
 use pty::PtyManager;
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use tauri::State;
 
 /// アプリケーションの状態
 struct AppState {
     pty_manager: Mutex<Option<PtyManager>>,
     file_watcher: Mutex<Option<FileWatcher>>,
+    llm_service: Arc<Mutex<LlmService>>,
 }
 
 /// PTYセッションを作成
@@ -195,6 +199,7 @@ pub fn run() {
         .manage(AppState {
             pty_manager: Mutex::new(None),
             file_watcher: Mutex::new(None),
+            llm_service: Arc::new(Mutex::new(LlmService::new())),
         })
         .invoke_handler(tauri::generate_handler![
             create_pty,
@@ -204,7 +209,10 @@ pub fn run() {
             read_directory,
             watch_directory,
             parse_command,
-            open_in_finder
+            open_in_finder,
+            commands::llm_commands::configure_llm_provider,
+            commands::llm_commands::explain_command_with_llm,
+            commands::llm_commands::translate_natural_language_to_command,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

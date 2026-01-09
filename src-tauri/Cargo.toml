@@ -28,3 +28,8 @@ tokio = { version = "1", features = ["full"] }
 notify = "7.0"
 notify-debouncer-full = "0.4"
 regex = "1.10"
+reqwest = { version = "0.13.1", features = ["json", "default-tls"] }
+async-trait = "0.1.89"
+lru = "0.16.3"
+sha2 = "0.10.9"
+tauri-plugin-store = "2.4.2"
