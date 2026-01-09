@@ -26,7 +26,7 @@ export function Breadcrumb() {
       }
     };
 
-    updateCurrentDirectory();
+    // 初回読み込みはスキップ（PTY作成後のイベントを待つ）
 
     // コマンド実行イベントをリッスン
     const handleCommandExecuted = () => {

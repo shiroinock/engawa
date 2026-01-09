@@ -66,7 +66,7 @@ export function FileTree({ onFileClick }: { onFileClick: (path: string, isDir: b
   };
 
   useEffect(() => {
-    loadCurrentDirectory();
+    // 初回読み込みはスキップ（PTY作成後のイベントを待つ）
 
     // ファイル変更イベントをリッスン
     const unlistenFileChanged = listen('file-changed', () => {
