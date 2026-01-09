@@ -1,9 +1,17 @@
 use lru::LruCache;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::num::NonZeroUsize;
 use std::sync::Mutex;
 
 use super::config::CommandContext;
+
+/// キャッシュエントリ（永続化用）
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CacheEntry {
+    pub key: String,
+    pub value: String,
+}
 
 /// LLMレスポンスのキャッシュ
 pub struct LlmCache {
@@ -65,6 +73,26 @@ impl LlmCache {
     #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
+    }
+
+    /// キャッシュエントリをリストとして取得（永続化用）
+    pub fn to_entries(&self) -> Vec<CacheEntry> {
+        let cache = self.cache.lock().unwrap();
+        cache
+            .iter()
+            .map(|(key, value)| CacheEntry {
+                key: key.clone(),
+                value: value.clone(),
+            })
+            .collect()
+    }
+
+    /// エントリリストからキャッシュを復元（永続化からのロード）
+    pub fn from_entries(&self, entries: Vec<CacheEntry>) {
+        let mut cache = self.cache.lock().unwrap();
+        for entry in entries {
+            cache.put(entry.key, entry.value);
+        }
     }
 }
 

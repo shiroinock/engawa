@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use tauri::State;
 
-use crate::llm::{CommandContext, LlmCache, LlmConfig, LlmProvider, OpenAiProvider, CostTracker, CostSettings, CostRecord};
+use crate::llm::{CacheEntry, CommandContext, LlmCache, LlmConfig, LlmProvider, OpenAiProvider, CostTracker, CostSettings, CostRecord};
 
 /// LLMサービスの状態
 pub struct LlmService {
@@ -182,4 +182,38 @@ pub fn get_cost_records(
     let service = llm_service.lock().unwrap();
     let cost_tracker = service.get_cost_tracker();
     Ok(cost_tracker.get_all_records())
+}
+
+/// キャッシュを保存用のデータとして取得
+#[tauri::command]
+pub fn get_cache_data(
+    llm_service: State<'_, Arc<std::sync::Mutex<LlmService>>>,
+) -> Result<Vec<CacheEntry>, String> {
+    let service = llm_service.lock().unwrap();
+    let cache = service.cache.clone();
+    Ok(cache.to_entries())
+}
+
+/// キャッシュをロード
+#[tauri::command]
+pub fn load_cache_data(
+    entries: Vec<CacheEntry>,
+    llm_service: State<'_, Arc<std::sync::Mutex<LlmService>>>,
+) -> Result<(), String> {
+    let service = llm_service.lock().unwrap();
+    let cache = service.cache.clone();
+    cache.from_entries(entries);
+    Ok(())
+}
+
+/// コスト履歴をロード
+#[tauri::command]
+pub fn load_cost_records(
+    records: Vec<CostRecord>,
+    llm_service: State<'_, Arc<std::sync::Mutex<LlmService>>>,
+) -> Result<(), String> {
+    let service = llm_service.lock().unwrap();
+    let cost_tracker = service.get_cost_tracker();
+    cost_tracker.load_records(records);
+    Ok(())
 }

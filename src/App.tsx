@@ -44,8 +44,48 @@ function App() {
           console.error('Failed to configure LLM provider:', error);
         }
       }
+
+      // キャッシュとコスト履歴をロード
+      try {
+        const savedCache = localStorage.getItem('llm_cache');
+        if (savedCache) {
+          const cacheEntries = JSON.parse(savedCache);
+          await invoke('load_cache_data', { entries: cacheEntries });
+          console.log('LLM cache loaded');
+        }
+
+        const savedCostRecords = localStorage.getItem('llm_cost_records');
+        if (savedCostRecords) {
+          const records = JSON.parse(savedCostRecords);
+          await invoke('load_cost_records', { records });
+          console.log('LLM cost records loaded');
+        }
+      } catch (error) {
+        console.error('Failed to load cached data:', error);
+      }
     };
     loadAndConfigureLlm();
+  }, []);
+
+  // 定期的にキャッシュとコスト履歴を保存（5分ごと）
+  useEffect(() => {
+    const saveInterval = setInterval(async () => {
+      try {
+        // キャッシュを保存
+        const cacheData = await invoke<any[]>('get_cache_data');
+        localStorage.setItem('llm_cache', JSON.stringify(cacheData));
+
+        // コスト履歴を保存
+        const costRecords = await invoke<any[]>('get_cost_records');
+        localStorage.setItem('llm_cost_records', JSON.stringify(costRecords));
+
+        console.log('LLM cache and cost records saved');
+      } catch (error) {
+        console.error('Failed to save cached data:', error);
+      }
+    }, 5 * 60 * 1000); // 5分
+
+    return () => clearInterval(saveInterval);
   }, []);
 
   // カレントディレクトリのファイル一覧を取得
