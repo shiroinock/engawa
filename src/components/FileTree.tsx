@@ -55,6 +55,9 @@ export function FileTree({ onFileClick }: { onFileClick: (path: string, isDir: b
       if (dir !== previousDirRef.current) {
         previousDirRef.current = dir;
         setCurrentDir(dir);
+        // ディレクトリ変更時は古いデータをクリア（権限エラー対応）
+        setData([]);
+        setPermissionError(false);
         await loadDirectory(dir);
       }
     } catch (error) {
