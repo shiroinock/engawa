@@ -25,6 +25,9 @@ export function FileTree({ onFileClick }: { onFileClick: (path: string, isDir: b
   const [currentDir, setCurrentDir] = useState<string>('');
   const previousDirRef = useRef<string>('');
 
+  // パンくずの深さを計算（インデント量の決定用）
+  const breadcrumbDepth = currentDir.split('/').filter(Boolean).length;
+
   // ディレクトリの内容を読み込む
   const loadDirectory = async (path: string) => {
     try {
@@ -90,11 +93,13 @@ export function FileTree({ onFileClick }: { onFileClick: (path: string, isDir: b
       onFileClick(node.data.path, node.data.isDir);
     };
 
+    const isRootLevel = node.level === 0;
+
     return (
       <div
         style={style}
         ref={dragHandle}
-        className={`tree-node ${node.data.isDir ? 'directory' : 'file'}`}
+        className={`tree-node ${node.data.isDir ? 'directory' : 'file'} ${isRootLevel ? 'root-level' : ''}`}
         onClick={handleClick}
       >
         <span className="node-icon">{node.data.isDir ? '📁' : '📄'}</span>
@@ -109,16 +114,18 @@ export function FileTree({ onFileClick }: { onFileClick: (path: string, isDir: b
         <h3>ファイル</h3>
       </div>
       <Breadcrumb />
-      <Tree
-        data={data}
-        openByDefault={false}
-        width="100%"
-        height={600}
-        indent={16}
-        rowHeight={28}
-      >
-        {Node}
-      </Tree>
+      <div style={{ paddingLeft: `${(breadcrumbDepth + 1) * 12}px` }}>
+        <Tree
+          data={data}
+          openByDefault={false}
+          width="100%"
+          height={600}
+          indent={16}
+          rowHeight={28}
+        >
+          {Node}
+        </Tree>
+      </div>
     </div>
   );
 }
