@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { useLlmExplanation } from '../hooks/useLlm';
 import './PreviewModal.css';
 
 interface ParseResult {
@@ -18,6 +19,31 @@ interface PreviewModalProps {
 export function PreviewModal({ command, onConfirm, onCancel }: PreviewModalProps) {
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [enterKeyReleased, setEnterKeyReleased] = useState(false);
+  const [currentDir, setCurrentDir] = useState<string>('');
+
+  // カレントディレクトリを取得
+  useEffect(() => {
+    const getCurrentDir = async () => {
+      try {
+        const dir = await invoke<string>('get_current_directory');
+        setCurrentDir(dir);
+      } catch (error) {
+        console.error('Failed to get current directory:', error);
+      }
+    };
+    getCurrentDir();
+  }, []);
+
+  // LLM説明を取得
+  const { explanation: llmExplanation, isLoading: isLoadingLlm } = useLlmExplanation({
+    command,
+    context: {
+      current_directory: currentDir,
+      shell_type: 'zsh', // TODO: 実際のシェル種別を取得
+      risk_level: parseResult?.risk_level || 'safe',
+    },
+    enabled: !!parseResult && !!currentDir,
+  });
 
   useEffect(() => {
     const parseCommand = async () => {
@@ -95,6 +121,21 @@ export function PreviewModal({ command, onConfirm, onCancel }: PreviewModalProps
             <h4>このコマンドは...</h4>
             <p>{parseResult.description}</p>
           </div>
+
+          {/* LLM詳細説明 */}
+          {(llmExplanation || isLoadingLlm) && (
+            <div className="llm-explanation">
+              <h4>詳しい説明 <span className="ai-badge">Powered by AI</span></h4>
+              {isLoadingLlm ? (
+                <div className="llm-loading">
+                  <div className="loading-spinner"></div>
+                  <span>AI が説明を生成中...</span>
+                </div>
+              ) : (
+                <p>{llmExplanation}</p>
+              )}
+            </div>
+          )}
 
           <div className="impact-info">
             <h4>影響範囲</h4>

@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { Terminal } from './components/Terminal';
 import { FileTree } from './components/FileTree';
 import { CommandAnalyzer } from './components/CommandAnalyzer';
+import { SettingsModal } from './components/SettingsModal';
 import { invoke } from '@tauri-apps/api/core';
 import { matchFiles, expandBraces } from './utils/globMatch';
+import type { LlmConfig } from './types/llm';
 import './App.css';
 
 interface ParseResult {
@@ -28,6 +30,23 @@ function App() {
   const [affectedSubdirectories, setAffectedSubdirectories] = useState<Record<string, { count: number; riskLevel: 'safe' | 'caution' | 'dangerous' }>>({});
   const [affectedParentLevels, setAffectedParentLevels] = useState<Record<number, { count: number; riskLevel: 'safe' | 'caution' | 'dangerous' }>>({});
   const [resolvedTargets, setResolvedTargets] = useState<string[]>([]);
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+
+  // 初期設定を読み込んでLLMプロバイダーを設定
+  useEffect(() => {
+    const loadAndConfigureLlm = async () => {
+      const savedConfig = localStorage.getItem('llm_config');
+      if (savedConfig) {
+        try {
+          const config = JSON.parse(savedConfig) as LlmConfig;
+          await invoke('configure_llm_provider', { config });
+        } catch (error) {
+          console.error('Failed to configure LLM provider:', error);
+        }
+      }
+    };
+    loadAndConfigureLlm();
+  }, []);
 
   // カレントディレクトリのファイル一覧を取得
   const loadCurrentFiles = useCallback(async () => {
@@ -307,6 +326,14 @@ function App() {
 
   return (
     <div className="app-container">
+      <button
+        className="settings-button"
+        onClick={() => setIsSettingsOpen(true)}
+        title="LLM設定"
+      >
+        ⚙️
+      </button>
+
       <div className="sidebar">
         <FileTree
           onFileClick={handleFileClick}
@@ -323,6 +350,11 @@ function App() {
           resolvedTargets={resolvedTargets}
         />
       </div>
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </div>
   );
 }
