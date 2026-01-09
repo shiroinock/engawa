@@ -68,6 +68,10 @@ export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: 
         invoke('create_pty', { cols, rows })
           .then(() => {
             console.log('PTY created successfully');
+            // PTY作成後、カレントディレクトリを更新（シェル起動を待つ）
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('engawa-command-executed'));
+            }, 500);
           })
           .catch((error) => {
             console.error('Failed to create PTY:', error);
