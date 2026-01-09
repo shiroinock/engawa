@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use tauri::State;
 
-use crate::llm::{CommandContext, LlmCache, LlmConfig, LlmError, LlmProvider, OpenAiProvider};
+use crate::llm::{CommandContext, LlmCache, LlmConfig, LlmProvider, OpenAiProvider};
 
 /// LLMサービスの状態
 pub struct LlmService {

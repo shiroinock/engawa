@@ -6,4 +6,4 @@ pub mod provider;
 pub use cache::LlmCache;
 pub use config::{CommandContext, LlmConfig, LlmProviderType};
 pub use openai::OpenAiProvider;
-pub use provider::{LlmError, LlmProvider};
+pub use provider::LlmProvider;

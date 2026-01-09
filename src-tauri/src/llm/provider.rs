@@ -53,5 +53,6 @@ pub trait LlmProvider: Send + Sync {
     ) -> Result<String, LlmError>;
 
     /// プロバイダー名を取得
+    #[allow(dead_code)]
     fn provider_name(&self) -> &str;
 }

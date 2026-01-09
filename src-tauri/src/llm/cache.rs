@@ -48,18 +48,21 @@ impl LlmCache {
     }
 
     /// キャッシュをクリア
+    #[allow(dead_code)]
     pub fn clear(&self) {
         let mut cache = self.cache.lock().unwrap();
         cache.clear();
     }
 
     /// キャッシュサイズを取得
+    #[allow(dead_code)]
     pub fn len(&self) -> usize {
         let cache = self.cache.lock().unwrap();
         cache.len()
     }
 
     /// キャッシュが空かどうか
+    #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
