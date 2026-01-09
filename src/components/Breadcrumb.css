@@ -65,6 +65,20 @@
   color: #d4d4d4;
 }
 
+.breadcrumb-item.current {
+  cursor: default;
+  color: #8b949e;
+  font-weight: 500;
+}
+
+.breadcrumb-item.current:hover {
+  background-color: transparent;
+}
+
+.breadcrumb-item.current:active {
+  background-color: transparent;
+}
+
 .finder-button {
   background-color: transparent;
   border: 1px solid #3e3e42;

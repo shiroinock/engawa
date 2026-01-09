@@ -86,23 +86,26 @@ export function Breadcrumb() {
         </button>
       </div>
       <div className="breadcrumb-path">
-        {pathSegments.map((segment, index) => (
-          <span
-            key={index}
-            className="breadcrumb-segment"
-            style={{ paddingLeft: `${(index + 1) * 12}px` }}
-          >
+        {pathSegments.map((segment, index) => {
+          const isCurrentDir = index === pathSegments.length - 1;
+          return (
             <span
-              className="breadcrumb-item"
-              onClick={() => handleSegmentClick(index)}
+              key={index}
+              className="breadcrumb-segment"
+              style={{ paddingLeft: `${(index + 1) * 12}px` }}
             >
-              {segment}
+              <span
+                className={`breadcrumb-item ${isCurrentDir ? 'current' : ''}`}
+                onClick={isCurrentDir ? undefined : () => handleSegmentClick(index)}
+              >
+                {segment}
+              </span>
+              {index < pathSegments.length - 1 && (
+                <span className="breadcrumb-separator">/</span>
+              )}
             </span>
-            {index < pathSegments.length - 1 && (
-              <span className="breadcrumb-separator">/</span>
-            )}
-          </span>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
