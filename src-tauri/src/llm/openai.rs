@@ -62,6 +62,18 @@ impl OpenAiProvider {
             max_tokens: 500,
         };
 
+        // リクエスト内容をログ出力
+        log::info!("=== OpenAI API Request ===");
+        log::info!("Model: {}", request.model);
+        log::info!("Temperature: {}", request.temperature);
+        log::info!("Max tokens: {}", request.max_tokens);
+        log::info!("Messages:");
+        for (i, msg) in request.messages.iter().enumerate() {
+            log::info!("  [{}] Role: {}", i, msg.role);
+            log::info!("  [{}] Content: {}", i, msg.content);
+        }
+        log::info!("========================");
+
         let response = self
             .client
             .post("https://api.openai.com/v1/chat/completions")
@@ -98,11 +110,18 @@ impl OpenAiProvider {
             LlmError::ApiError(format!("Failed to parse response: {}", e))
         })?;
 
-        api_response
+        let response_content = api_response
             .choices
             .first()
             .map(|choice| choice.message.content.clone())
-            .ok_or_else(|| LlmError::ApiError("No response from API".to_string()))
+            .ok_or_else(|| LlmError::ApiError("No response from API".to_string()))?;
+
+        // レスポンス内容をログ出力
+        log::info!("=== OpenAI API Response ===");
+        log::info!("Content: {}", response_content);
+        log::info!("===========================");
+
+        Ok(response_content)
     }
 }
 
