@@ -1,0 +1,83 @@
+.breadcrumb {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 12px;
+  background-color: #1e1e1e;
+  border-bottom: 1px solid #3e3e42;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  font-size: 11px;
+  color: #d4d4d4;
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.breadcrumb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.breadcrumb-path {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.breadcrumb-root,
+.breadcrumb-item {
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.breadcrumb-root:hover,
+.breadcrumb-item:hover {
+  background-color: #37373d;
+}
+
+.breadcrumb-root {
+  color: #569cd6;
+  font-weight: 600;
+}
+
+.breadcrumb-segment {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.breadcrumb-segment::before {
+  content: '└─';
+  color: #6e6e6e;
+  margin-right: 4px;
+}
+
+.breadcrumb-separator {
+  display: none;
+}
+
+.breadcrumb-item {
+  color: #d4d4d4;
+}
+
+.finder-button {
+  background-color: transparent;
+  border: 1px solid #3e3e42;
+  color: #d4d4d4;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.finder-button:hover {
+  background-color: #37373d;
+  border-color: #569cd6;
+}
+
+.finder-button:active {
+  transform: scale(0.95);
+}

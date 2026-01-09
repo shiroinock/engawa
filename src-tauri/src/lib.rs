@@ -140,6 +140,36 @@ fn parse_command(input: String) -> Option<ParseResult> {
     parser::parse_command(&input)
 }
 
+/// ディレクトリをFinderやExplorerで開く
+#[tauri::command]
+fn open_in_finder(path: String) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| format!("Failed to open in Finder: {}", e))?;
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| format!("Failed to open in Explorer: {}", e))?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| format!("Failed to open in file manager: {}", e))?;
+    }
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -164,7 +194,8 @@ pub fn run() {
             get_current_directory,
             read_directory,
             watch_directory,
-            parse_command
+            parse_command,
+            open_in_finder
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

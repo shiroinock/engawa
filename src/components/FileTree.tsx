@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Tree, NodeRendererProps } from 'react-arborist';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { Breadcrumb } from './Breadcrumb';
 import './FileTree.css';
 
 interface FileNode {
@@ -23,17 +24,6 @@ export function FileTree({ onFileClick }: { onFileClick: (path: string, isDir: b
   const [data, setData] = useState<TreeNode[]>([]);
   const [currentDir, setCurrentDir] = useState<string>('');
 
-  // カレントディレクトリを取得
-  const loadCurrentDirectory = async () => {
-    try {
-      const dir = await invoke<string>('get_current_directory');
-      setCurrentDir(dir);
-      await loadDirectory(dir);
-    } catch (error) {
-      console.error('Failed to get current directory:', error);
-    }
-  };
-
   // ディレクトリの内容を読み込む
   const loadDirectory = async (path: string) => {
     try {
@@ -42,6 +32,17 @@ export function FileTree({ onFileClick }: { onFileClick: (path: string, isDir: b
       setData(treeNodes);
     } catch (error) {
       console.error('Failed to load directory:', error);
+    }
+  };
+
+  // カレントディレクトリを取得
+  const loadCurrentDirectory = async () => {
+    try {
+      const dir = await invoke<string>('get_current_directory');
+      setCurrentDir(dir);
+      await loadDirectory(dir);
+    } catch (error) {
+      console.error('Failed to get current directory:', error);
     }
   };
 
@@ -60,16 +61,26 @@ export function FileTree({ onFileClick }: { onFileClick: (path: string, isDir: b
     loadCurrentDirectory();
 
     // ファイル変更イベントをリッスン
-    const unlisten = listen('file-changed', () => {
-      if (currentDir) {
-        loadDirectory(currentDir);
-      }
+    const unlistenFileChanged = listen('file-changed', () => {
+      // ファイルが変更されたら現在のディレクトリを再読み込み
+      loadCurrentDirectory();
     });
 
+    // PTY出力を監視してcdコマンドを検知
+    const unlistenPtyOutput = listen<string>('pty-output', () => {
+      // cdコマンドが実行されたかもしれないので、ディレクトリを更新
+      loadCurrentDirectory();
+    });
+
+    // 定期的に現在ディレクトリをチェック（500ms毎）
+    const interval = setInterval(loadCurrentDirectory, 500);
+
     return () => {
-      unlisten.then((fn) => fn());
+      unlistenFileChanged.then((fn) => fn());
+      unlistenPtyOutput.then((fn) => fn());
+      clearInterval(interval);
     };
-  }, [currentDir]);
+  }, []);
 
   // ノードのレンダリング
   const Node = ({ node, style, dragHandle }: NodeRendererProps<TreeNode>) => {
@@ -94,8 +105,8 @@ export function FileTree({ onFileClick }: { onFileClick: (path: string, isDir: b
     <div className="file-tree">
       <div className="file-tree-header">
         <h3>ファイル</h3>
-        <div className="current-dir">{currentDir}</div>
       </div>
+      <Breadcrumb />
       <Tree
         data={data}
         openByDefault={false}

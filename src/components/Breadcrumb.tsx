@@ -1,0 +1,101 @@
+import { useEffect, useState } from 'react';
+import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
+import './Breadcrumb.css';
+
+export function Breadcrumb() {
+  const [currentPath, setCurrentPath] = useState<string>('');
+  const [pathSegments, setPathSegments] = useState<string[]>([]);
+
+  useEffect(() => {
+    const updateCurrentDirectory = async () => {
+      try {
+        const path = await invoke<string>('get_current_directory');
+        setCurrentPath(path);
+
+        // パスをセグメントに分割
+        const segments = path.split('/').filter(Boolean);
+        setPathSegments(segments);
+      } catch (error) {
+        console.error('Failed to get current directory:', error);
+      }
+    };
+
+    updateCurrentDirectory();
+
+    // PTY出力を監視してcdコマンドを検知
+    const unlisten = listen<string>('pty-output', () => {
+      // cdコマンドが実行されたかもしれないので、ディレクトリを更新
+      // （簡易的な実装: 定期的にチェック）
+      updateCurrentDirectory();
+    });
+
+    // 定期的に現在ディレクトリをチェック（500ms毎）
+    const interval = setInterval(updateCurrentDirectory, 500);
+
+    return () => {
+      unlisten.then((fn) => fn());
+      clearInterval(interval);
+    };
+  }, []);
+
+  const handleOpenInFinder = async () => {
+    try {
+      await invoke('open_in_finder', { path: currentPath });
+    } catch (error) {
+      console.error('Failed to open in Finder:', error);
+    }
+  };
+
+  const handleSegmentClick = async (index: number) => {
+    // クリックしたセグメントまでのパスを構築
+    const targetPath = '/' + pathSegments.slice(0, index + 1).join('/');
+
+    try {
+      // cdコマンドを実行
+      await invoke('write_to_pty', { data: `cd "${targetPath}"\n` });
+    } catch (error) {
+      console.error('Failed to change directory:', error);
+    }
+  };
+
+  const handleRootClick = async () => {
+    try {
+      await invoke('write_to_pty', { data: 'cd /\n' });
+    } catch (error) {
+      console.error('Failed to change directory:', error);
+    }
+  };
+
+  return (
+    <div className="breadcrumb">
+      <div className="breadcrumb-header">
+        <span className="breadcrumb-root" onClick={handleRootClick}>
+          /
+        </span>
+        <button className="finder-button" onClick={handleOpenInFinder} title="Finderで開く">
+          📁
+        </button>
+      </div>
+      <div className="breadcrumb-path">
+        {pathSegments.map((segment, index) => (
+          <span
+            key={index}
+            className="breadcrumb-segment"
+            style={{ paddingLeft: `${(index + 1) * 12}px` }}
+          >
+            <span
+              className="breadcrumb-item"
+              onClick={() => handleSegmentClick(index)}
+            >
+              {segment}
+            </span>
+            {index < pathSegments.length - 1 && (
+              <span className="breadcrumb-separator">/</span>
+            )}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
