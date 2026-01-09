@@ -16,7 +16,8 @@ pub struct OpenAiProvider {
 struct OpenAiRequest {
     model: String,
     messages: Vec<Message>,
-    temperature: f32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    temperature: Option<f32>,
     max_completion_tokens: u32,
 }
 
@@ -58,14 +59,18 @@ impl OpenAiProvider {
         let request = OpenAiRequest {
             model: self.config.model.clone(),
             messages,
-            temperature: 0.7,
+            temperature: None, // モデルのデフォルト値を使用
             max_completion_tokens: 500,
         };
 
         // リクエスト内容をログ出力
         log::info!("=== OpenAI API Request ===");
         log::info!("Model: {}", request.model);
-        log::info!("Temperature: {}", request.temperature);
+        if let Some(temp) = request.temperature {
+            log::info!("Temperature: {}", temp);
+        } else {
+            log::info!("Temperature: default (not specified)");
+        }
         log::info!("Max completion tokens: {}", request.max_completion_tokens);
         log::info!("Messages:");
         for (i, msg) in request.messages.iter().enumerate() {
