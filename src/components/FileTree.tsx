@@ -20,7 +20,29 @@ interface TreeNode {
   children?: TreeNode[];
 }
 
-export function FileTree({ onFileClick }: { onFileClick: (path: string, isDir: boolean) => void }) {
+interface HighlightedFile {
+  name: string;
+  riskLevel: 'safe' | 'caution' | 'dangerous';
+}
+
+interface AffectedSubdirectory {
+  count: number;
+  riskLevel: 'safe' | 'caution' | 'dangerous';
+}
+
+interface FileTreeProps {
+  onFileClick: (path: string, isDir: boolean) => void;
+  highlightedFiles?: HighlightedFile[];
+  affectedSubdirectories?: Record<string, AffectedSubdirectory>;
+  affectedParentLevels?: Record<number, AffectedSubdirectory>;
+}
+
+export function FileTree({
+  onFileClick,
+  highlightedFiles = [],
+  affectedSubdirectories = {},
+  affectedParentLevels = {}
+}: FileTreeProps) {
   const [data, setData] = useState<TreeNode[]>([]);
   const [currentDir, setCurrentDir] = useState<string>('');
   const previousDirRef = useRef<string>('');
@@ -106,15 +128,27 @@ export function FileTree({ onFileClick }: { onFileClick: (path: string, isDir: b
 
     const isRootLevel = node.level === 0;
 
+    // ハイライト状態をチェック
+    const highlight = highlightedFiles.find(h => h.name === node.data.name);
+    const highlightClass = highlight ? `highlight-${highlight.riskLevel}` : '';
+
+    // サブディレクトリへの影響をチェック
+    const affectedInfo = node.data.isDir ? affectedSubdirectories[node.data.name] : null;
+
     return (
       <div
         style={style}
         ref={dragHandle}
-        className={`tree-node ${node.data.isDir ? 'directory' : 'file'} ${isRootLevel ? 'root-level' : ''}`}
+        className={`tree-node ${node.data.isDir ? 'directory' : 'file'} ${isRootLevel ? 'root-level' : ''} ${highlightClass}`}
         onClick={handleClick}
       >
         <span className="node-icon">{node.data.isDir ? '📁' : '📄'}</span>
         <span className="node-name">{node.data.name}</span>
+        {affectedInfo && (
+          <span className={`affected-badge badge-${affectedInfo.riskLevel}`}>
+            {affectedInfo.count}
+          </span>
+        )}
       </div>
     );
   };
@@ -124,7 +158,7 @@ export function FileTree({ onFileClick }: { onFileClick: (path: string, isDir: b
       <div className="file-tree-header">
         <h3>ファイル</h3>
       </div>
-      <Breadcrumb />
+      <Breadcrumb affectedParentLevels={affectedParentLevels} />
       <div style={{ paddingLeft: `${(breadcrumbDepth + 1) * 12 + 12}px` }}>
         {permissionError ? (
           <div className="permission-error">

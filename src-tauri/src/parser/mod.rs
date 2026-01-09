@@ -16,6 +16,7 @@ pub struct ParseResult {
     pub args: Vec<String>,
     pub risk_level: RiskLevel,
     pub description: String,
+    pub targets: Vec<String>, // 影響を受けるファイル/パターン
 }
 
 /// コマンドをパースして危険度を判定
@@ -108,12 +109,47 @@ pub fn parse_command(input: &str) -> Option<ParseResult> {
         _ => return None,
     };
 
+    // 影響を受けるファイル/パターンを抽出
+    let targets = extract_targets(actual_command, &actual_args);
+
     Some(ParseResult {
         command: base_command.to_string(),
         args,
         risk_level,
         description: description.to_string(),
+        targets,
     })
+}
+
+/// コマンドから影響を受けるファイル/パターンを抽出
+fn extract_targets(command: &str, args: &[String]) -> Vec<String> {
+    match command {
+        // 削除・移動・コピー系: オプション以外の引数がターゲット
+        "rm" | "rmdir" => {
+            args.iter()
+                .filter(|arg| !arg.starts_with('-'))
+                .cloned()
+                .collect()
+        }
+        "mv" | "cp" => {
+            // mvとcpは最初の引数（移動元）のみがターゲット
+            // 最後の引数（移動先）は新しい場所なので除外
+            args.iter()
+                .filter(|arg| !arg.starts_with('-'))
+                .take(args.len().saturating_sub(1))
+                .cloned()
+                .collect()
+        }
+        "mkdir" | "touch" => {
+            // 作成系: オプション以外の全ての引数
+            args.iter()
+                .filter(|arg| !arg.starts_with('-'))
+                .cloned()
+                .collect()
+        }
+        // その他のコマンドはターゲットなし
+        _ => vec![],
+    }
 }
 
 #[cfg(test)]

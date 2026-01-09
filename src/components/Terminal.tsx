@@ -14,6 +14,7 @@ export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: 
   const xtermRef = useRef<XTerm | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const currentLineRef = useRef<string>('');
+  const onCurrentCommandChangeRef = useRef(onCurrentCommandChange);
   const enterPressTimerRef = useRef<number | null>(null);
   const isEnterPressedRef = useRef<boolean>(false);
   const shouldShowPreviewRef = useRef<boolean>(false); // プレビュー表示予定フラグ
@@ -23,6 +24,11 @@ export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: 
   const [gaugeKey, setGaugeKey] = useState(0); // 再レンダリング用
 
   const LONG_PRESS_DURATION = 1000; // 長押し時間（ミリ秒）
+
+  // onCurrentCommandChangeが変わったら更新
+  useEffect(() => {
+    onCurrentCommandChangeRef.current = onCurrentCommandChange;
+  }, [onCurrentCommandChange]);
 
   useEffect(() => {
     if (!terminalRef.current) return;
@@ -51,9 +57,58 @@ export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: 
     xtermRef.current = xterm;
     fitAddonRef.current = fitAddon;
 
+    // xtermバッファから現在のコマンドラインを抽出
+    const extractCurrentCommand = (): string => {
+      const buffer = xterm.buffer.active;
+      const cursorY = buffer.cursorY;
+      const cursorX = buffer.cursorX;
+      const line = buffer.getLine(cursorY);
+
+      if (!line) return '';
+
+      // カーソル位置までのテキストを取得（補完候補を除外）
+      let lineText = '';
+      for (let i = 0; i < Math.min(cursorX, line.length); i++) {
+        const cell = line.getCell(i);
+        if (cell) {
+          lineText += cell.getChars();
+        }
+      }
+
+      // プロンプト記号を除去（%、$、#など）
+      // 一般的なプロンプトパターンを検出
+      const promptPatterns = [
+        /^.*?[\$#%>]\s*/,  // 基本的なプロンプト（$, #, %, >）
+        /^.*?❯\s*/,        // oh-my-zshなどの矢印プロンプト
+        /^\[.*?\]\s*[\$#%>]\s*/,  // [user@host]$ 形式
+      ];
+
+      let command = lineText;
+      for (const pattern of promptPatterns) {
+        const match = lineText.match(pattern);
+        if (match) {
+          command = lineText.slice(match[0].length);
+          break;
+        }
+      }
+
+      return command.trim();
+    };
+
+    // コマンドラインを更新する関数
+    const updateCurrentCommand = () => {
+      const currentCommand = extractCurrentCommand();
+      if (currentCommand !== currentLineRef.current) {
+        currentLineRef.current = currentCommand;
+        onCurrentCommandChangeRef.current?.(currentCommand);
+      }
+    };
+
     // PTY出力を受信するリスナーを先に設定
     const unlisten = listen<string>('pty-output', (event) => {
       xterm.write(event.payload);
+      // PTY出力があったらコマンドラインを更新（次のフレームで）
+      requestAnimationFrame(updateCurrentCommand);
     });
 
     // PTY作成済みフラグ
@@ -137,7 +192,7 @@ export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: 
               }, 100);
 
               currentLineRef.current = '';
-              onCurrentCommandChange?.('');
+              onCurrentCommandChangeRef.current?.('');
             }
           }
           return false;
@@ -156,17 +211,6 @@ export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: 
       invoke('write_to_pty', { data }).catch((error) => {
         console.error('Failed to write to PTY:', error);
       });
-
-      // 入力を追跡
-      if (data === '\x7f' || data === '\b') {
-        // バックスペース
-        currentLineRef.current = currentLineRef.current.slice(0, -1);
-        onCurrentCommandChange?.(currentLineRef.current);
-      } else if (data.charCodeAt(0) >= 32) {
-        // 通常の文字
-        currentLineRef.current += data;
-        onCurrentCommandChange?.(currentLineRef.current);
-      }
     });
 
     // ウィンドウリサイズイベント（fitを実行するだけ、PTYリサイズはonResizeで処理）
@@ -198,7 +242,7 @@ export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: 
     }, 100);
 
     currentLineRef.current = '';
-    onCurrentCommandChange?.('');
+    onCurrentCommandChangeRef.current?.('');
     showPreviewRef.current = false;
     setShowPreview(false);
     shouldShowPreviewRef.current = false; // フラグをリセット

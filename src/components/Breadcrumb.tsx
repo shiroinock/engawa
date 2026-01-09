@@ -1,9 +1,17 @@
 import { useEffect, useState, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { listen } from '@tauri-apps/api/event';
 import './Breadcrumb.css';
 
-export function Breadcrumb() {
+interface AffectedSubdirectory {
+  count: number;
+  riskLevel: 'safe' | 'caution' | 'dangerous';
+}
+
+interface BreadcrumbProps {
+  affectedParentLevels?: Record<number, AffectedSubdirectory>;
+}
+
+export function Breadcrumb({ affectedParentLevels = {} }: BreadcrumbProps) {
   const [currentPath, setCurrentPath] = useState<string>('');
   const [pathSegments, setPathSegments] = useState<string[]>([]);
   const previousPathRef = useRef<string>('');
@@ -89,6 +97,10 @@ export function Breadcrumb() {
       <div className="breadcrumb-path">
         {pathSegments.map((segment, index) => {
           const isCurrentDir = index === pathSegments.length - 1;
+          // この階層が親ディレクトリの何レベル上かを計算
+          const parentLevel = pathSegments.length - index - 1;
+          const affectedInfo = affectedParentLevels[parentLevel];
+
           return (
             <span
               key={index}
@@ -101,6 +113,11 @@ export function Breadcrumb() {
               >
                 {segment}
               </span>
+              {affectedInfo && (
+                <span className={`affected-badge badge-${affectedInfo.riskLevel}`}>
+                  {affectedInfo.count}
+                </span>
+              )}
               {index < pathSegments.length - 1 && (
                 <span className="breadcrumb-separator">/</span>
               )}

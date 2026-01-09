@@ -61,6 +61,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
 }
 
 .tree-node.directory .node-name {
@@ -86,4 +87,51 @@
 .error-message {
   font-size: 13px;
   line-height: 1.5;
+}
+
+/* ハイライト表示 */
+.tree-node.highlight-safe {
+  background-color: rgba(74, 158, 255, 0.15);
+  border-left: 2px solid #4a9eff;
+}
+
+.tree-node.highlight-caution {
+  background-color: rgba(249, 200, 89, 0.15);
+  border-left: 2px solid #f9c859;
+}
+
+.tree-node.highlight-dangerous {
+  background-color: rgba(248, 81, 73, 0.15);
+  border-left: 2px solid #f85149;
+}
+
+.tree-node.highlight-safe:hover,
+.tree-node.highlight-caution:hover,
+.tree-node.highlight-dangerous:hover {
+  background-color: rgba(74, 158, 255, 0.25);
+}
+
+/* サブディレクトリへの影響バッジ */
+.affected-badge {
+  margin-left: auto;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.affected-badge.badge-safe {
+  background-color: rgba(74, 158, 255, 0.3);
+  color: #4a9eff;
+}
+
+.affected-badge.badge-caution {
+  background-color: rgba(249, 200, 89, 0.3);
+  color: #f9c859;
+}
+
+.affected-badge.badge-dangerous {
+  background-color: rgba(248, 81, 73, 0.3);
+  color: #f85149;
 }
