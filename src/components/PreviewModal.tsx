@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useLlmExplanation } from '../hooks/useLlm';
 import './PreviewModal.css';
@@ -34,14 +34,17 @@ export function PreviewModal({ command, onConfirm, onCancel }: PreviewModalProps
     getCurrentDir();
   }, []);
 
+  // コンテキストをメモ化（無限ループ防止）
+  const context = useMemo(() => ({
+    current_directory: currentDir,
+    shell_type: 'zsh', // TODO: 実際のシェル種別を取得
+    risk_level: parseResult?.risk_level || 'safe',
+  }), [currentDir, parseResult?.risk_level]);
+
   // LLM説明を取得
   const { explanation: llmExplanation, isLoading: isLoadingLlm } = useLlmExplanation({
     command,
-    context: {
-      current_directory: currentDir,
-      shell_type: 'zsh', // TODO: 実際のシェル種別を取得
-      risk_level: parseResult?.risk_level || 'safe',
-    },
+    context,
     enabled: !!parseResult && !!currentDir,
   });
 

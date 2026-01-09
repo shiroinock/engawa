@@ -71,7 +71,8 @@ export function useLlmExplanation({
     return () => {
       isCancelled = true;
     };
-  }, [command, context, enabled]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [command, context.current_directory, context.shell_type, context.risk_level, enabled]);
 
   return { explanation, isLoading, error };
 }
