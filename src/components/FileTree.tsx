@@ -114,7 +114,7 @@ export function FileTree({ onFileClick }: { onFileClick: (path: string, isDir: b
         <h3>ファイル</h3>
       </div>
       <Breadcrumb />
-      <div style={{ paddingLeft: `${breadcrumbDepth * 12 + 12}px` }}>
+      <div style={{ paddingLeft: `${(breadcrumbDepth + 1) * 12 + 12}px` }}>
         <Tree
           data={data}
           openByDefault={false}
