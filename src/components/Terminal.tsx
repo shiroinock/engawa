@@ -48,30 +48,42 @@ export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: 
 
     xterm.open(terminalRef.current);
 
-    // 少し遅延させてからfitを実行（DOMの準備を待つ）
-    setTimeout(() => {
-      fitAddon.fit();
-    }, 0);
-
     xtermRef.current = xterm;
     fitAddonRef.current = fitAddon;
 
-    // PTYセッションを作成
-    const cols = xterm.cols;
-    const rows = xterm.rows;
-
-    invoke('create_pty', { cols, rows })
-      .then(() => {
-        console.log('PTY created successfully');
-      })
-      .catch((error) => {
-        console.error('Failed to create PTY:', error);
-        xterm.writeln(`\r\nError: ${error}`);
-      });
-
-    // PTY出力を受信
+    // PTY出力を受信するリスナーを先に設定
     const unlisten = listen<string>('pty-output', (event) => {
       xterm.write(event.payload);
+    });
+
+    // PTY作成済みフラグ
+    let ptyCreated = false;
+
+    // リサイズイベントでPTYを作成（初回のfitで発火）
+    const resizeDisposable = xterm.onResize(({ cols, rows }) => {
+      if (!ptyCreated) {
+        ptyCreated = true;
+        console.log('Creating PTY with size:', cols, 'x', rows);
+
+        invoke('create_pty', { cols, rows })
+          .then(() => {
+            console.log('PTY created successfully');
+          })
+          .catch((error) => {
+            console.error('Failed to create PTY:', error);
+            xterm.writeln(`\r\nError: ${error}`);
+          });
+      } else {
+        // 2回目以降はリサイズ
+        invoke('resize_pty', { cols, rows }).catch((error) => {
+          console.error('Failed to resize PTY:', error);
+        });
+      }
+    });
+
+    // DOMの準備を待ってからfitを実行
+    requestAnimationFrame(() => {
+      fitAddon.fit();
     });
 
     // Enterキー長押し検知用のカスタムキーハンドラー
@@ -147,21 +159,16 @@ export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: 
       }
     });
 
-    // リサイズイベント
+    // ウィンドウリサイズイベント（fitを実行するだけ、PTYリサイズはonResizeで処理）
     const handleResize = () => {
       fitAddon.fit();
-      const newCols = xterm.cols;
-      const newRows = xterm.rows;
-
-      invoke('resize_pty', { cols: newCols, rows: newRows }).catch((error) => {
-        console.error('Failed to resize PTY:', error);
-      });
     };
 
     window.addEventListener('resize', handleResize);
 
     // クリーンアップ
     return () => {
+      resizeDisposable.dispose();
       disposable.dispose();
       unlisten.then((fn) => fn());
       window.removeEventListener('resize', handleResize);
