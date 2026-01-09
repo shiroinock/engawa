@@ -18,6 +18,9 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   width: 90%;
   max-width: 500px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
   animation: slideIn 0.2s ease;
 }
 
@@ -59,6 +62,9 @@
 .settings-body {
   padding: 20px;
   color: #d4d4d4;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .settings-field {
@@ -142,6 +148,7 @@
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .settings-footer button {
