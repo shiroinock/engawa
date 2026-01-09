@@ -13,6 +13,10 @@ function App() {
       // ディレクトリの場合は cd コマンドを実行
       try {
         await invoke('write_to_pty', { data: `cd "${path}"\n` });
+        // コマンド実行後にディレクトリ更新イベントを発火
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('engawa-command-executed'));
+        }, 100);
       } catch (error) {
         console.error('Failed to change directory:', error);
       }
