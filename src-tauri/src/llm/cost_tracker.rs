@@ -42,6 +42,7 @@ impl Default for CostSettings {
 /// コストトラッカー
 pub struct CostTracker {
     records: Mutex<Vec<CostRecord>>,
+    #[allow(dead_code)]
     pricing: HashMap<String, ModelPricing>,
     settings: Mutex<CostSettings>,
 }
@@ -98,6 +99,7 @@ impl CostTracker {
     }
 
     /// 使用量を記録
+    #[allow(dead_code)]
     pub fn record_usage(
         &self,
         provider: String,
@@ -123,6 +125,7 @@ impl CostTracker {
     }
 
     /// コストを計算
+    #[allow(dead_code)]
     fn calculate_cost(&self, model: &str, input_tokens: u32, output_tokens: u32) -> f64 {
         if let Some(pricing) = self.pricing.get(model) {
             let input_cost = (input_tokens as f64 / 1_000_000.0) * pricing.input_per_million;
@@ -177,6 +180,7 @@ impl CostTracker {
     }
 
     /// 予算超過チェック
+    #[allow(dead_code)]
     pub fn check_budget_exceeded(&self) -> Option<String> {
         let settings = self.settings.lock().unwrap();
 

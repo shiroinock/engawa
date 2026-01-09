@@ -176,3 +176,72 @@
 .btn-primary:hover:not(:disabled) {
   background-color: #6aacd8;
 }
+
+/* コスト管理 */
+.settings-divider {
+  border: none;
+  border-top: 1px solid #3e3e42;
+  margin: 24px 0;
+}
+
+.settings-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #d4d4d4;
+  margin: 0 0 16px 0;
+}
+
+.cost-info-display {
+  background-color: #252526;
+  border: 1px solid #3e3e42;
+  border-radius: 4px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.cost-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.cost-stat:last-child {
+  margin-bottom: 0;
+}
+
+.cost-label {
+  font-size: 13px;
+  color: #858585;
+}
+
+.cost-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #4ec9b0;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+}
+
+.cost-limit {
+  font-size: 14px;
+  color: #858585;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #d4d4d4;
+}
+
+.checkbox-label input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.settings-field input[type="number"]:disabled {
+  background-color: #2a2a2a;
+  color: #6e6e6e;
+  cursor: not-allowed;
+}

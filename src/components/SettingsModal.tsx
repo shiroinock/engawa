@@ -8,6 +8,14 @@ interface SettingsModalProps {
   onClose: () => void;
 }
 
+interface CostInfo {
+  daily_cost: number;
+  monthly_cost: number;
+  daily_limit: number | null;
+  monthly_limit: number | null;
+  enabled: boolean;
+}
+
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [provider, setProvider] = useState<LlmProviderType>('OpenAi');
   const [apiKey, setApiKey] = useState<string>('');
@@ -15,7 +23,15 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [saveMessage, setSaveMessage] = useState<string>('');
 
+  // コスト管理
+  const [costInfo, setCostInfo] = useState<CostInfo | null>(null);
+  const [costEnabled, setCostEnabled] = useState<boolean>(true);
+  const [dailyLimit, setDailyLimit] = useState<string>('0.50');
+  const [monthlyLimit, setMonthlyLimit] = useState<string>('5.00');
+
   useEffect(() => {
+    if (!isOpen) return;
+
     // 設定を読み込む（ローカルストレージから）
     const savedConfig = localStorage.getItem('llm_config');
     if (savedConfig) {
@@ -28,6 +44,24 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         console.error('Failed to load config:', error);
       }
     }
+
+    // コスト情報を読み込む
+    const loadCostInfo = async () => {
+      try {
+        const info = await invoke<CostInfo>('get_cost_info');
+        setCostInfo(info);
+        setCostEnabled(info.enabled);
+        if (info.daily_limit !== null) {
+          setDailyLimit(info.daily_limit.toFixed(2));
+        }
+        if (info.monthly_limit !== null) {
+          setMonthlyLimit(info.monthly_limit.toFixed(2));
+        }
+      } catch (error) {
+        console.error('Failed to load cost info:', error);
+      }
+    };
+    loadCostInfo();
   }, [isOpen]);
 
   const handleSave = async () => {
@@ -53,6 +87,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
       // ローカルストレージに保存（APIキーは含める - 注意: 本番環境では暗号化を検討）
       localStorage.setItem('llm_config', JSON.stringify(config));
+
+      // コスト設定を保存
+      const costSettings = {
+        daily_limit: dailyLimit ? parseFloat(dailyLimit) : null,
+        monthly_limit: monthlyLimit ? parseFloat(monthlyLimit) : null,
+        enabled: costEnabled,
+      };
+      await invoke('update_cost_settings', { settings: costSettings });
 
       setSaveMessage('設定を保存しました');
       setTimeout(() => {
@@ -134,6 +176,77 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   </a>
                 </>
               )}
+            </span>
+          </div>
+
+          <hr className="settings-divider" />
+
+          <h4 className="settings-section-title">コスト管理</h4>
+
+          {costInfo && (
+            <div className="cost-info-display">
+              <div className="cost-stat">
+                <span className="cost-label">今日の使用額:</span>
+                <span className="cost-value">${costInfo.daily_cost.toFixed(4)}</span>
+                {costInfo.daily_limit !== null && (
+                  <span className="cost-limit">/ ${costInfo.daily_limit.toFixed(2)}</span>
+                )}
+              </div>
+              <div className="cost-stat">
+                <span className="cost-label">今月の使用額:</span>
+                <span className="cost-value">${costInfo.monthly_cost.toFixed(4)}</span>
+                {costInfo.monthly_limit !== null && (
+                  <span className="cost-limit">/ ${costInfo.monthly_limit.toFixed(2)}</span>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="settings-field">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={costEnabled}
+                onChange={(e) => setCostEnabled(e.target.checked)}
+              />
+              コスト管理を有効にする
+            </label>
+            <span className="field-hint">
+              予算上限を超えるとLLM機能の使用を制限します
+            </span>
+          </div>
+
+          <div className="settings-field">
+            <label htmlFor="dailyLimit">日間予算上限（ドル）</label>
+            <input
+              id="dailyLimit"
+              type="number"
+              step="0.01"
+              min="0"
+              value={dailyLimit}
+              onChange={(e) => setDailyLimit(e.target.value)}
+              placeholder="0.50"
+              disabled={!costEnabled}
+            />
+            <span className="field-hint">
+              1日あたりのLLM使用予算上限（デフォルト: $0.50）
+            </span>
+          </div>
+
+          <div className="settings-field">
+            <label htmlFor="monthlyLimit">月間予算上限（ドル）</label>
+            <input
+              id="monthlyLimit"
+              type="number"
+              step="0.01"
+              min="0"
+              value={monthlyLimit}
+              onChange={(e) => setMonthlyLimit(e.target.value)}
+              placeholder="5.00"
+              disabled={!costEnabled}
+            />
+            <span className="field-hint">
+              1ヶ月あたりのLLM使用予算上限（デフォルト: $5.00）
             </span>
           </div>
 
