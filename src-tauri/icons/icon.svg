@@ -4,46 +4,14 @@
     <mask id="roundedMask">
       <rect width="1024" height="1024" rx="180" ry="180" fill="white"/>
     </mask>
-    
-    <!-- 背景グラデーション（深い青のグラデーション） -->
-    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#2a4560;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#1a2840;stop-opacity:1" />
-    </linearGradient>
-    
-    <!-- ガラス効果のグラデーション -->
-    <linearGradient id="glassGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.15" />
-      <stop offset="50%" style="stop-color:#ffffff;stop-opacity:0.05" />
-      <stop offset="100%" style="stop-color:#000000;stop-opacity:0.1" />
-    </linearGradient>
-    
-    <!-- 縁側のシルエット用グラデーション -->
-    <linearGradient id="engawaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#fff5e6;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#f0e0c0;stop-opacity:1" />
-    </linearGradient>
-    
-    <!-- ソフトシャドウ -->
-    <filter id="softShadow">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="8"/>
-      <feOffset dx="0" dy="4" result="offsetblur"/>
-      <feComponentTransfer>
-        <feFuncA type="linear" slope="0.3"/>
-      </feComponentTransfer>
-      <feMerge>
-        <feMergeNode/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
   </defs>
   
   <!-- 背景 -->
-  <rect width="1024" height="1024" fill="url(#bgGradient)" mask="url(#roundedMask)"/>
+  <rect width="1024" height="1024" fill="#1A2840" mask="url(#roundedMask)"/>
   
-  <!-- 縁側のシルエット（元のパスをスケールして配置） -->
-  <g transform="translate(512, 512) scale(0.85) translate(-512, -512)" filter="url(#softShadow)">
-    <path fill="url(#engawaGradient)" opacity="0.95" stroke="none" 
+  <!-- 縁側のシルエット -->
+  <g transform="translate(512, 512) scale(0.85) translate(-512, -512)">
+    <path fill="#FAF3E0" opacity="1.0" stroke="none" 
       d="
 M232.658600,466.570984 
 	C252.058182,461.080841 267.363586,449.637512 281.110474,436.081818 
@@ -103,10 +71,4 @@ M232.658600,466.570984
 	C230.080032,467.449005 231.179169,467.061890 232.658600,466.570984 
 z"/>
   </g>
-  
-  <!-- ガラス効果オーバーレイ -->
-  <rect width="1024" height="512" fill="url(#glassGradient)" mask="url(#roundedMask)"/>
-  
-  <!-- 上部ハイライト -->
-  <ellipse cx="512" cy="200" rx="400" ry="100" fill="white" opacity="0.08" mask="url(#roundedMask)"/>
 </svg>
