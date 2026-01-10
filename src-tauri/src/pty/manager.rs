@@ -33,8 +33,9 @@ impl PtyManager {
             .openpty(pty_size)
             .map_err(|e| format!("PTY作成エラー: {}", e))?;
 
-        // シェルを起動
+        // シェルをログインシェルとして起動
         let mut cmd = CommandBuilder::new(Self::get_shell());
+        cmd.arg("-l"); // ログインシェルフラグで /etc/zprofile や ~/.zprofile を読み込む
         cmd.env("TERM", "xterm-256color");
 
         let child = pty_pair
