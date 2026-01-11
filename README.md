@@ -12,22 +12,8 @@ Engawaは「ターミナルが怖い」と感じる人のための新しいタ�
 - 🛡️ **仲介者になる**: コマンド実行前のプレビュー、危険度表示、LLMによる分かりやすい説明
 - 🔍 **影響範囲の可視化**: ワイルドカードのマッチプレビュー、ファイルツリー上でのハイライト
 - 🤖 **LLM統合**: 自然言語でのコマンド入力、エラーメッセージの翻訳
-- 🎨 **温かみのあるデザイン**: 黒背景から脱却した親しみやすいUI
 
-## スクリーンショット
-
-_TODO: スクリーンショットを追加_
-
-## インストール
-
-### 必要要件
-
-- macOS 10.15+ / Windows 10+ / Linux
-- Node.js 18+
-- Rust 1.70+
-- pnpm
-
-### ビルド手順
+## ビルド手順
 
 ```bash
 # リポジトリをクローン
@@ -100,25 +86,6 @@ pnpm exec tsc --noEmit
 cd src-tauri && cargo clippy
 ```
 
-## ゴール
-
-ターミナルの力を削ぐのではなく、**ターミナルへの架け橋**になること。
-Engawaを卒業した人が、普通のターミナルも怖くなくなっている——それが成功の指標です。
-
 ## ライセンス
 
 [MIT License](LICENSE) - 自由に使用、改変、配布できます。
-
-## コントリビューション
-
-Issue、Pull Requestを歓迎します！詳細は[CONTRIBUTING.md](CONTRIBUTING.md)を参照してください。
-
-## 作者
-
-[@shiroino](https://github.com/shiroino)
-
-## 謝辞
-
-- [Tauri](https://tauri.app/) - クロスプラットフォームデスクトップアプリフレームワーク
-- [xterm.js](https://xtermjs.org/) - ターミナルエミュレータライブラリ
-- [portable-pty](https://github.com/wez/wezterm/tree/main/pty) - PTY制御ライブラリ
