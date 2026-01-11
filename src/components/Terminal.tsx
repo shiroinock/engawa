@@ -49,13 +49,18 @@ export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: 
   useEffect(() => {
     if (!terminalRef.current) return;
 
+    // CSS変数からターミナルの背景色を取得
+    const terminalBackground = getComputedStyle(document.documentElement)
+      .getPropertyValue('--terminal-background')
+      .trim();
+
     // xterm.jsの初期化
     const xterm = new XTerm({
       cursorBlink: true,
       fontSize: 14,
       fontFamily: 'Menlo, Monaco, "Courier New", monospace',
       theme: {
-        background: '#1e1e1e',
+        background: terminalBackground || '#1e1e1e',
         foreground: '#d4d4d4',
       },
       scrollback: 10000,

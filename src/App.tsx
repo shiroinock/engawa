@@ -31,6 +31,9 @@ function App() {
   const [affectedParentLevels, setAffectedParentLevels] = useState<Record<number, { count: number; riskLevel: 'safe' | 'caution' | 'dangerous' }>>({});
   const [resolvedTargets, setResolvedTargets] = useState<string[]>([]);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [sidebarWidth, setSidebarWidth] = useState<number>(300);
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
+  const [isResizing, setIsResizing] = useState<boolean>(false);
 
   // 初期設定を読み込んでLLMプロバイダーを設定
   useEffect(() => {
@@ -334,6 +337,55 @@ function App() {
     calculateAffectedCounts();
   }, [parseResult, currentDir, currentFiles]);
 
+  // リサイズハンドラー
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    let animationFrameId: number;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+
+      animationFrameId = requestAnimationFrame(() => {
+        const newWidth = e.clientX;
+        // 最小150px、最大600px
+        if (newWidth >= 150 && newWidth <= 600) {
+          setSidebarWidth(newWidth);
+        }
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [isResizing]);
+
+  // 折りたたみトグル
+  const toggleSidebar = useCallback(() => {
+    setIsCollapsed((prev) => !prev);
+  }, []);
+
   const handleFileClick = async (path: string, isDir: boolean) => {
     if (isDir) {
       // ディレクトリの場合は cd コマンドを実行（相対パス）
@@ -374,7 +426,10 @@ function App() {
         ⚙️
       </button>
 
-      <div className="sidebar">
+      <div
+        className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isResizing ? 'resizing' : ''}`}
+        style={{ width: isCollapsed ? '0px' : `${sidebarWidth}px` }}
+      >
         <FileTree
           onFileClick={handleFileClick}
           highlightedFiles={highlightedFiles}
@@ -382,6 +437,22 @@ function App() {
           affectedParentLevels={affectedParentLevels}
         />
       </div>
+
+      {!isCollapsed && (
+        <div
+          className={`resizer ${isResizing ? 'resizing' : ''}`}
+          onMouseDown={handleMouseDown}
+        />
+      )}
+
+      <button
+        className="sidebar-toggle"
+        onClick={toggleSidebar}
+        title={isCollapsed ? 'サイドバーを表示' : 'サイドバーを隠す'}
+      >
+        {isCollapsed ? '▶' : '◀'}
+      </button>
+
       <div className="main-content">
         <Terminal onCurrentCommandChange={setCurrentCommand} />
         <CommandAnalyzer

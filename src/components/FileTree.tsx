@@ -47,6 +47,8 @@ export function FileTree({
   const [currentDir, setCurrentDir] = useState<string>('');
   const previousDirRef = useRef<string>('');
   const [permissionError, setPermissionError] = useState<boolean>(false);
+  const [treeHeight, setTreeHeight] = useState<number>(600);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   // パンくずの深さを計算（インデント量の決定用）
   const breadcrumbDepth = currentDir.split('/').filter(Boolean).length;
@@ -68,6 +70,26 @@ export function FileTree({
       }
     }
   };
+
+  // コンテナの高さを監視してTreeの高さを更新
+  useEffect(() => {
+    if (!contentRef.current) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const height = entry.contentRect.height;
+        if (height > 0) {
+          setTreeHeight(height);
+        }
+      }
+    });
+
+    resizeObserver.observe(contentRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
 
   // カレントディレクトリを取得（変更があった時だけ更新）
   const loadCurrentDirectory = async () => {
@@ -159,7 +181,11 @@ export function FileTree({
         <h3>ファイル</h3>
       </div>
       <Breadcrumb affectedParentLevels={affectedParentLevels} />
-      <div style={{ paddingLeft: `${(breadcrumbDepth + 1) * 12 + 12}px` }}>
+      <div
+        ref={contentRef}
+        className="file-tree-content"
+        style={{ paddingLeft: `${(breadcrumbDepth + 1) * 12 + 12}px` }}
+      >
         {permissionError ? (
           <div className="permission-error">
             <div className="error-icon">🔒</div>
@@ -170,7 +196,7 @@ export function FileTree({
             data={data}
             openByDefault={false}
             width="100%"
-            height={600}
+            height={treeHeight}
             indent={12}
             rowHeight={28}
           >
