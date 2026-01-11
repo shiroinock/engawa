@@ -1,5 +1,4 @@
 mod commands;
-mod error_detector;
 mod fs;
 mod llm;
 mod parser;

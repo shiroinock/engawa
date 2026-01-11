@@ -1,7 +1,7 @@
 {
   "name": "engawa",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.1.0",
+  "description": "A beginner-friendly terminal emulator that serves as a bridge to mastering the command line",
   "main": "index.js",
   "scripts": {
     "dev": "vite",
@@ -10,9 +10,26 @@
     "tauri": "tauri",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "terminal",
+    "emulator",
+    "tauri",
+    "react",
+    "xterm",
+    "beginner-friendly",
+    "llm",
+    "ai"
+  ],
+  "author": "shiroino",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shiroino/engawa.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shiroino/engawa/issues"
+  },
+  "homepage": "https://github.com/shiroino/engawa#readme",
   "packageManager": "pnpm@10.17.1",
   "devDependencies": {
     "@tauri-apps/cli": "^2.9.6",
