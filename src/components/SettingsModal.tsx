@@ -108,6 +108,17 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     }
   };
 
+  const handleClearCache = async () => {
+    try {
+      await invoke('clear_llm_cache');
+      setSaveMessage('キャッシュをクリアしました');
+      setTimeout(() => setSaveMessage(''), 2000);
+    } catch (error) {
+      console.error('Failed to clear cache:', error);
+      setSaveMessage(`エラー: ${error}`);
+    }
+  };
+
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Escape') {
       onClose();
@@ -247,6 +258,24 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             />
             <span className="field-hint">
               1ヶ月あたりのLLM使用予算上限（デフォルト: $5.00）
+            </span>
+          </div>
+
+          <hr className="settings-divider" />
+
+          <h4 className="settings-section-title">デバッグ</h4>
+
+          <div className="settings-field">
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={handleClearCache}
+              style={{ width: 'auto' }}
+            >
+              キャッシュをクリア
+            </button>
+            <span className="field-hint">
+              LLMのレスポンスキャッシュを削除します。新しいプロンプトをテストする際に便利です。
             </span>
           </div>
 

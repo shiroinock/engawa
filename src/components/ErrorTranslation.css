@@ -1,0 +1,135 @@
+.error-translation {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background-color: #2d2d2d;
+  border-top: 2px solid #f85149;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.error-translation-content {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.error-translation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.error-translation-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #f85149;
+}
+
+.dismiss-button {
+  background: none;
+  border: none;
+  color: #8b949e;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.dismiss-button:hover {
+  background-color: #3e3e42;
+  color: #d4d4d4;
+}
+
+.error-translation-loading {
+  color: #8b949e;
+  font-size: 13px;
+  padding: 12px 0;
+}
+
+.error-translation-error {
+  color: #f85149;
+  font-size: 13px;
+  padding: 12px;
+  background-color: rgba(248, 81, 73, 0.1);
+  border-radius: 6px;
+  border-left: 3px solid #f85149;
+}
+
+.error-translation-text {
+  color: #d4d4d4;
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.error-translation-text p {
+  margin: 8px 0;
+}
+
+.error-translation-original {
+  margin-top: 16px;
+  border-top: 1px solid #3e3e42;
+  padding-top: 12px;
+}
+
+.error-translation-original details {
+  cursor: pointer;
+}
+
+.error-translation-original summary {
+  color: #8b949e;
+  font-size: 12px;
+  padding: 4px 0;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+}
+
+.error-translation-original summary::-webkit-details-marker {
+  display: none;
+}
+
+.error-translation-original summary::before {
+  content: '▶';
+  display: inline-block;
+  margin-right: 6px;
+  transition: transform 0.2s ease;
+  font-size: 10px;
+}
+
+.error-translation-original details[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.error-translation-original summary:hover {
+  color: #d4d4d4;
+}
+
+.error-translation-original pre {
+  margin-top: 8px;
+  padding: 12px;
+  background-color: #1e1e1e;
+  border-radius: 6px;
+  color: #f85149;
+  font-size: 12px;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

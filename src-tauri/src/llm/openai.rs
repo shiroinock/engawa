@@ -103,7 +103,7 @@ impl OpenAiProvider {
             model: self.config.model.clone(),
             messages,
             temperature: None, // モデルのデフォルト値を使用
-            max_completion_tokens: 2000, // reasoning モデル用に増量（推論 + 出力）
+            max_completion_tokens: 3000, // reasoning モデル用: 推論 + 出力の両方をカバー
         };
 
         // リクエスト内容をログ出力
@@ -253,6 +253,39 @@ impl LlmProvider for OpenAiProvider {
             content: format!(
                 "カレントディレクトリ: {}\n\n以下の指示をシェルコマンドに変換してください:\n{}",
                 masked_dir, input
+            ),
+        };
+
+        self.call_api(vec![system_message, user_message]).await
+    }
+
+    async fn translate_error_message(
+        &self,
+        error_message: &str,
+        context: &CommandContext,
+    ) -> Result<(String, Option<UsageInfo>), LlmError> {
+        let system_message = Message {
+            role: "system".to_string(),
+            content: format!(
+                "あなたはターミナル初心者を助けるアシスタントです。\
+                 エラーメッセージを簡潔に説明してください。専門用語は避けてください。\
+                 シェル: {}",
+                context.shell_type
+            ),
+        };
+
+        // カレントディレクトリパスをマスキング（機密情報の保護）
+        let masked_dir = Self::mask_directory_path(&context.current_directory);
+
+        let user_message = Message {
+            role: "user".to_string(),
+            content: format!(
+                "カレントディレクトリ: {}\n\n以下のエラーを簡潔に説明してください（3-4文以内）:\n{}\n\n\
+                 以下の形式で回答してください:\n\
+                 ❌ 問題: [1文で要約]\n\
+                 [1-2文で説明]\n\n\
+                 💡 解決策: [1-2個、各1文で]",
+                masked_dir, error_message
             ),
         };
 

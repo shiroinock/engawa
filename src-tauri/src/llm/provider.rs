@@ -60,6 +60,13 @@ pub trait LlmProvider: Send + Sync {
         context: &CommandContext,
     ) -> Result<(String, Option<UsageInfo>), LlmError>;
 
+    /// エラーメッセージを翻訳・解説（日本語の説明と解決策を返す）
+    async fn translate_error_message(
+        &self,
+        error_message: &str,
+        context: &CommandContext,
+    ) -> Result<(String, Option<UsageInfo>), LlmError>;
+
     /// プロバイダー名を取得
     #[allow(dead_code)]
     fn provider_name(&self) -> &str;

@@ -265,3 +265,70 @@ pub fn load_cost_records(
     cost_tracker.load_records(records);
     Ok(())
 }
+
+/// キャッシュをクリア
+#[tauri::command]
+pub fn clear_llm_cache(
+    llm_service: State<'_, Arc<std::sync::Mutex<LlmService>>>,
+) -> Result<(), String> {
+    let service = llm_service.lock().unwrap();
+    let cache = service.cache.clone();
+    cache.clear();
+    log::info!("LLM cache cleared");
+    Ok(())
+}
+
+/// エラーメッセージを翻訳・解説
+#[tauri::command]
+pub async fn translate_error_message(
+    error_message: String,
+    context: CommandContext,
+    llm_service: State<'_, Arc<std::sync::Mutex<LlmService>>>,
+) -> Result<String, String> {
+    // プロバイダー、キャッシュ、コストトラッカー、設定をクローン（Mutexを早期解放）
+    let (provider, cache, cost_tracker, config) = {
+        let service = llm_service.lock().unwrap();
+        service
+            .get_provider_and_cache()
+            .ok_or_else(|| "LLM provider not configured".to_string())?
+    };
+
+    // キャッシュをチェック
+    if let Some(cached) = cache.get(&error_message, &context, "error") {
+        log::info!("Cache hit for error message");
+        return Ok(cached);
+    }
+
+    // LLM API呼び出し（Mutexから解放済み）
+    log::info!("Calling LLM API for error translation");
+    let (result, usage_info) = provider
+        .translate_error_message(&error_message, &context)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // コスト記録
+    if let Some(usage) = usage_info {
+        let provider_name = match config.provider {
+            LlmProviderType::OpenAi => "OpenAI",
+            LlmProviderType::Anthropic => "Anthropic",
+        };
+        cost_tracker.record_usage(
+            provider_name.to_string(),
+            config.model.clone(),
+            usage.input_tokens,
+            usage.output_tokens,
+        );
+        log::info!(
+            "Cost recorded for error translation: provider={}, model={}, input={}, output={}",
+            provider_name,
+            config.model,
+            usage.input_tokens,
+            usage.output_tokens
+        );
+    }
+
+    // キャッシュに保存
+    cache.set(&error_message, &context, "error", result.clone());
+
+    Ok(result)
+}

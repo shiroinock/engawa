@@ -7,6 +7,7 @@ import { listen } from '@tauri-apps/api/event';
 import { PreviewModal } from './PreviewModal';
 import { LongPressGauge } from './LongPressGauge';
 import { NaturalLanguageInput } from './NaturalLanguageInput';
+import { ErrorTranslation } from './ErrorTranslation';
 import 'xterm/css/xterm.css';
 import './Terminal.css';
 
@@ -24,8 +25,43 @@ export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: 
   const [previewCommand, setPreviewCommand] = useState<string>('');
   const [gaugeKey, setGaugeKey] = useState(0); // 再レンダリング用
   const [showNaturalLanguageInput, setShowNaturalLanguageInput] = useState(false);
+  const [detectedError, setDetectedError] = useState<string | null>(null);
+  const outputBufferRef = useRef<string>(''); // PTY出力バッファ
 
   const LONG_PRESS_DURATION = 1000; // 長押し時間（ミリ秒）
+
+  // ANSIエスケープシーケンスを除去
+  const stripAnsi = (text: string): string => {
+    // ANSIエスケープシーケンスを除去する正規表現（より包括的）
+    // \u001b[?2004h のような ? を含むシーケンスもカバー
+    // eslint-disable-next-line no-control-regex
+    return text.replace(/\u001b\[[0-9;?]*[a-zA-Z]/g, '');
+  };
+
+  // エラーパターンの検出
+  const detectError = (output: string): string | null => {
+    // ANSIエスケープシーケンスを除去してからチェック
+    const cleanOutput = stripAnsi(output);
+
+    const errorPatterns = [
+      /(?:bash|zsh|sh):\s*command not found:.*/i,
+      /permission denied.*/i,
+      /no such file or directory.*/i,
+      /syntax error.*/i,
+      /connection refused.*/i,
+      /(?:port|address) already in use.*/i,
+      /no space left on device.*/i,
+    ];
+
+    for (const pattern of errorPatterns) {
+      const match = cleanOutput.match(pattern);
+      if (match) {
+        return match[0];
+      }
+    }
+
+    return null;
+  };
 
   // onCurrentCommandChangeが変わったら更新
   useEffect(() => {
@@ -128,6 +164,25 @@ export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: 
     // PTY出力を受信するリスナーを先に設定
     const unlisten = listen<string>('pty-output', (event) => {
       xterm.write(event.payload);
+
+      // 出力バッファに追加してエラー検出
+      outputBufferRef.current += event.payload;
+
+      // エラー検出（最新の500文字のみをチェック）
+      const recentOutput = outputBufferRef.current.slice(-500);
+      const error = detectError(recentOutput);
+
+      if (error) {
+        setDetectedError(error);
+        // バッファをクリア（同じエラーを繰り返し検出しないように）
+        outputBufferRef.current = '';
+      }
+
+      // バッファが大きくなりすぎないように定期的にクリア（500文字に制限）
+      if (outputBufferRef.current.length > 500) {
+        outputBufferRef.current = outputBufferRef.current.slice(-500);
+      }
+
       // PTY出力があったらコマンドラインを更新（次のフレームで）
       requestAnimationFrame(updateCurrentCommand);
     });
@@ -306,6 +361,10 @@ export function Terminal({ onCurrentCommandChange }: { onCurrentCommandChange?: 
         isOpen={showNaturalLanguageInput}
         onClose={() => setShowNaturalLanguageInput(false)}
         onInsertCommand={handleInsertCommand}
+      />
+      <ErrorTranslation
+        errorMessage={detectedError}
+        onDismiss={() => setDetectedError(null)}
       />
     </>
   );

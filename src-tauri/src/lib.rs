@@ -1,4 +1,5 @@
 mod commands;
+mod error_detector;
 mod fs;
 mod llm;
 mod parser;
@@ -212,6 +213,7 @@ pub fn run() {
             commands::llm_commands::configure_llm_provider,
             commands::llm_commands::explain_command_with_llm,
             commands::llm_commands::translate_natural_language_to_command,
+            commands::llm_commands::translate_error_message,
             commands::llm_commands::get_cost_settings,
             commands::llm_commands::update_cost_settings,
             commands::llm_commands::get_cost_info,
@@ -219,6 +221,7 @@ pub fn run() {
             commands::llm_commands::get_cache_data,
             commands::llm_commands::load_cache_data,
             commands::llm_commands::load_cost_records,
+            commands::llm_commands::clear_llm_cache,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
