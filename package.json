@@ -30,7 +30,7 @@
     "url": "https://github.com/shiroino/engawa/issues"
   },
   "homepage": "https://github.com/shiroino/engawa#readme",
-  "packageManager": "pnpm@10.17.1",
+  "packageManager": "pnpm@10.34.5",
   "devDependencies": {
     "@tauri-apps/cli": "^2.9.6",
     "@types/react": "^19.2.7",
