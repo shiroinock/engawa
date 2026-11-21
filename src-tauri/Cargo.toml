@@ -6,7 +6,7 @@ authors = ["shiroino"]
 license = "MIT"
 repository = "https://github.com/shiroino/engawa"
 edition = "2021"
-rust-version = "1.77.2"
+rust-version = "1.85"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -30,7 +30,7 @@ notify-debouncer-full = "0.4"
 regex = "1.10"
 reqwest = { version = "0.13.1", features = ["json", "default-tls"] }
 async-trait = "0.1.89"
-lru = "0.16.3"
+lru = "0.18.2"
 sha2 = "0.10.9"
 tauri-plugin-store = "2.4.2"
 chrono = { version = "0.4.42", features = ["serde"] }
