@@ -1,5 +1,7 @@
 # Engawa (縁側)
 
+[![dept](https://raw.githubusercontent.com/shiroinock/engawa/dept-badge/dept.svg)](https://github.com/shiroinock/engawa/blob/dept-badge/dept.md)
+
 > ターミナルが怖い人のための、新しいターミナルエミュレータ
 
 ## コンセプト
