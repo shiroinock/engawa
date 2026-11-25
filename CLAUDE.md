@@ -103,7 +103,7 @@ pnpm lint
 - ✅ Node.js v24.3.0
 - ✅ pnpm 10.17.1
 - ✅ Tauri CLI v2.9.6（pnpm経由）
-- ✅ React 19.2.3 + TypeScript 5.9.3
+- ✅ React 19.2.3 + TypeScript 7.0.2
 - ✅ Vite 7.3.1
 - ✅ 基本プロジェクト構造作成済み
 
