@@ -104,7 +104,7 @@ pnpm lint
 - ✅ pnpm 10.17.1
 - ✅ Tauri CLI v2.9.6（pnpm経由）
 - ✅ React 19.2.3 + TypeScript 5.9.3
-- ✅ Vite 7.3.1
+- ✅ Vite 8.x
 - ✅ 基本プロジェクト構造作成済み
 
 Phase 1の実装を開始できる状態です。
