@@ -1,5 +1,5 @@
-use notify::{RecommendedWatcher, RecursiveMode};
-use notify_debouncer_full::{new_debouncer, DebounceEventResult, Debouncer, FileIdMap};
+use notify_debouncer_full::notify::{RecommendedWatcher, RecursiveMode};
+use notify_debouncer_full::{new_debouncer, DebounceEventResult, Debouncer, RecommendedCache};
 use serde::Serialize;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -16,7 +16,7 @@ pub struct FileNode {
 
 /// ファイルシステム監視を管理する構造体
 pub struct FileWatcher {
-    _debouncer: Arc<Mutex<Debouncer<RecommendedWatcher, FileIdMap>>>,
+    _debouncer: Arc<Mutex<Debouncer<RecommendedWatcher, RecommendedCache>>>,
     #[allow(dead_code)]
     app_handle: AppHandle,
 }
